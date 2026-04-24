@@ -21,5 +21,5 @@ public class User {
     private Role role;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tenant_id")
-    private Tenant tenantId;
+    private Tenant tenant;
 }
