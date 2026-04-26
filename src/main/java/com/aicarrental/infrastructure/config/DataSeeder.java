@@ -8,6 +8,7 @@ import com.aicarrental.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -19,6 +20,7 @@ public class DataSeeder implements CommandLineRunner {
 
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) {
@@ -54,14 +56,14 @@ public class DataSeeder implements CommandLineRunner {
 
         User fastcarAdmin = User.builder()
                 .email("admin@fastcar.com")
-                .passwordHash("123456")
+                .passwordHash(passwordEncoder.encode("123456admin"))
                 .role(Role.TENANT_ADMIN)
                 .tenant(fastcar)
                 .build();
 
         User citycarStaff = User.builder()
                 .email("staff@citydrive.com")
-                .passwordHash("123456")
+                .passwordHash(passwordEncoder.encode("123456staff"))
                 .role(Role.TENANT_STAFF)
                 .tenant(citycar)
                 .build();
