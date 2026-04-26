@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -37,4 +38,19 @@ public class TenantService {
                 savedTenant.getCreatedAt()
             );
         }
+
+    public List<TenantResponse> getAllTenants() {
+        return tenantRepository.findAll()
+                .stream()
+                .map(tenant -> new TenantResponse(
+                        tenant.getId(),
+                        tenant.getCompanyName(),
+                        tenant.getSubDomain(),
+                        tenant.getActive(),
+                        tenant.getEmail(),
+                        tenant.getPhoneNumber(),
+                        tenant.getCreatedAt()
+                ))
+                .toList();
+    }
     }
