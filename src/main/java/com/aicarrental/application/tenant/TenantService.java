@@ -2,6 +2,7 @@ package com.aicarrental.application.tenant;
 
 import com.aicarrental.api.tenant.request.CreateTenantRequest;
 import com.aicarrental.api.tenant.response.TenantResponse;
+import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +17,9 @@ public class TenantService {
     private final TenantRepository tenantRepository;
 
     public TenantResponse createTenant(CreateTenantRequest request) {
-
+        if (tenantRepository.existsBySubDomain(request.subDomain())) {
+            throw new BusinessException("Subdomain already exists");
+        }
         Tenant tenant = Tenant.builder()
                 .companyName(request.companyName())
                 .subDomain(request.subDomain())

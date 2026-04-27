@@ -2,6 +2,7 @@ package com.aicarrental.application.auth;
 
 import com.aicarrental.api.auth.request.LoginRequest;
 import com.aicarrental.api.auth.response.AuthResponse;
+import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.infrastructure.persistence.UserRepository;
 import com.aicarrental.infrastructure.security.JwtService;
@@ -18,7 +19,7 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+                .orElseThrow(() -> new BusinessException("Invalid email or password"));
 
         boolean passwordMatches = passwordEncoder.matches(
                 request.password(),
@@ -26,7 +27,7 @@ public class AuthService {
         );
 
         if (!passwordMatches) {
-            throw new RuntimeException("Invalid email or password");
+            throw new BusinessException("Invalid email or password");
         }
 
         String token = jwtService.generateToken(user);
