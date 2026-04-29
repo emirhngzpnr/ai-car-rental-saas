@@ -23,6 +23,7 @@ public class Tenant {
     private String subDomain;
     private Boolean active;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private String phoneNumber;
     private String email;
 

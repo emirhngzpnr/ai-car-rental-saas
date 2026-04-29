@@ -8,5 +8,6 @@ public record TenantResponse(Long id,
                              Boolean active,
                              String email,
                              String phoneNumber,
-                             LocalDateTime createdAt) {
+                             LocalDateTime createdAt,
+                             LocalDateTime updatedAt) {
 }

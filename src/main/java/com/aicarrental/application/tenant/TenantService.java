@@ -29,33 +29,18 @@ public class TenantService {
                 .phoneNumber(request.phoneNumber())
                 .active(true)
                 .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
 
         Tenant savedTenant = tenantRepository.save(tenant);
 
-        return new TenantResponse(
-                savedTenant.getId(),
-                savedTenant.getCompanyName(),
-                savedTenant.getSubDomain(),
-                savedTenant.getActive(),
-                savedTenant.getEmail(),
-                savedTenant.getPhoneNumber(),
-                savedTenant.getCreatedAt()
-            );
+        return mapToResponse(savedTenant);
         }
 
     public List<TenantResponse> getAllTenants() {
         return tenantRepository.findAll()
                 .stream()
-                .map(tenant -> new TenantResponse(
-                        tenant.getId(),
-                        tenant.getCompanyName(),
-                        tenant.getSubDomain(),
-                        tenant.getActive(),
-                        tenant.getEmail(),
-                        tenant.getPhoneNumber(),
-                        tenant.getCreatedAt()
-                ))
+                .map(this::mapToResponse)
                 .toList();
     }
     public TenantResponse getTenantById(Long id) {
@@ -81,7 +66,7 @@ public class TenantService {
         if (request.active() != null) {
             tenant.setActive(request.active());
         }
-
+        tenant.setUpdatedAt(LocalDateTime.now());
         Tenant updatedTenant = tenantRepository.save(tenant);
 
         return mapToResponse(updatedTenant);
@@ -102,7 +87,8 @@ public class TenantService {
                 tenant.getActive(),
                 tenant.getEmail(),
                 tenant.getPhoneNumber(),
-                tenant.getCreatedAt()
+                tenant.getCreatedAt(),
+                tenant.getUpdatedAt()
         );
     }
     }
