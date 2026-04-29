@@ -1,8 +1,10 @@
 package com.aicarrental.application.tenant;
 
 import com.aicarrental.api.tenant.request.CreateTenantRequest;
+import com.aicarrental.api.tenant.request.UpdateTenantRequest;
 import com.aicarrental.api.tenant.response.TenantResponse;
 import com.aicarrental.common.exception.BusinessException;
+import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
 import lombok.RequiredArgsConstructor;
@@ -55,5 +57,52 @@ public class TenantService {
                         tenant.getCreatedAt()
                 ))
                 .toList();
+    }
+    public TenantResponse getTenantById(Long id) {
+        Tenant tenant = tenantRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+
+        return mapToResponse(tenant);
+    }
+
+    public TenantResponse updateTenant(Long id, UpdateTenantRequest request) {
+        Tenant tenant = tenantRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+
+        if (tenantRepository.existsBySubDomainAndIdNot(request.subDomain(), id)) {
+            throw new BusinessException("Subdomain already exists");
+        }
+
+        tenant.setCompanyName(request.companyName());
+        tenant.setSubDomain(request.subDomain());
+        tenant.setEmail(request.email());
+        tenant.setPhoneNumber(request.phoneNumber());
+
+        if (request.active() != null) {
+            tenant.setActive(request.active());
+        }
+
+        Tenant updatedTenant = tenantRepository.save(tenant);
+
+        return mapToResponse(updatedTenant);
+    }
+
+    public void deleteTenant(Long id) {
+        Tenant tenant = tenantRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+
+        tenantRepository.delete(tenant);
+    }
+
+    private TenantResponse mapToResponse(Tenant tenant) {
+        return new TenantResponse(
+                tenant.getId(),
+                tenant.getCompanyName(),
+                tenant.getSubDomain(),
+                tenant.getActive(),
+                tenant.getEmail(),
+                tenant.getPhoneNumber(),
+                tenant.getCreatedAt()
+        );
     }
     }

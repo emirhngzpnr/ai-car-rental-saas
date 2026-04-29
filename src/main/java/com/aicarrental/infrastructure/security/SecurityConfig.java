@@ -12,7 +12,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
+/**
+ * Core security configuration class for the application.
+ * Manages JWT filter integration, endpoint authorization rules, and global security exceptions.
+ */
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
