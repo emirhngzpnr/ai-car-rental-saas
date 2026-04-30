@@ -56,7 +56,7 @@ public class UserService {
         User currentUser = getCurrentUser();
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
-            return userRepository.findAll()
+            return userRepository.findByActiveTrue()
                     .stream()
                     .map(this::mapToResponse)
                     .toList();
@@ -64,7 +64,7 @@ public class UserService {
 
         Long tenantId = getCurrentTenantId();
 
-        return userRepository.findByTenant_Id(tenantId)
+        return userRepository.findByTenant_IdAndActiveTrue(tenantId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -115,7 +115,10 @@ public class UserService {
 
     public void deleteUser(Long id) {
         User user = findUserByIdWithTenantIsolation(id);
-        userRepository.delete(user);
+        user.setActive(false);
+        user.setUpdatedAt(LocalDateTime.now());
+
+        userRepository.save(user);
     }
 
     private User findUserByIdWithTenantIsolation(Long userId) {
@@ -128,7 +131,7 @@ public class UserService {
 
         Long tenantId = getCurrentTenantId();
 
-        return userRepository.findByIdAndTenant_Id(userId, tenantId)
+        return userRepository.findByIdAndTenant_IdAndActiveTrue(userId,tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 

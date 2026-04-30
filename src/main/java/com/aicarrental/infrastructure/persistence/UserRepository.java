@@ -15,7 +15,11 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
     boolean existsByEmailAndIdNot(String email, Long id);
 
-    List<User> findByTenant_Id(Long tenantId);
+    List<User> findByTenant_IdAndActiveTrue(Long tenantId);
 
-    Optional<User> findByIdAndTenant_Id(Long id, Long tenantId);
+    Optional<User> findByIdAndTenant_IdAndActiveTrue(Long id, Long tenantId);
+
+    List<User> findByActiveTrue();
+
+    Optional<User> findByIdAndActiveTrue(Long id);
 }
