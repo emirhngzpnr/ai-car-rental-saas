@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class TenantController {
     private final TenantService tenantService;
 
     @PostMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<TenantResponse> createTenant(
             @Valid @RequestBody CreateTenantRequest request
     ) {
@@ -27,17 +29,20 @@ public class TenantController {
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<TenantResponse>> getAllTenants() {
         List<TenantResponse> responses = tenantService.getAllTenants();
         return ResponseEntity.ok(responses);
     }
     @GetMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<TenantResponse> getTenantById(@PathVariable Long id) {
         TenantResponse response = tenantService.getTenantById(id);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<TenantResponse> updateTenant(
             @PathVariable Long id,
             @Valid @RequestBody UpdateTenantRequest request
@@ -47,6 +52,7 @@ public class TenantController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteTenant(@PathVariable Long id) {
         tenantService.deleteTenant(id);
         return ResponseEntity.noContent().build();

@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,7 +18,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
  private final UserService userService;
+
  @PostMapping
+ @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'TENANT_ADMIN')")
  public ResponseEntity<UserResponse> createUser(
          @Valid @RequestBody CreateUserRequest createUserRequest) {
    UserResponse userResponse = userService.createUser(createUserRequest);
@@ -39,6 +42,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'TENANT_ADMIN')")
     public ResponseEntity<UserResponse> updateUser(
             @PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request
@@ -48,6 +52,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'TENANT_ADMIN')")
     public ResponseEntity<Void> deleteUser(
             @PathVariable Long id
     ) {

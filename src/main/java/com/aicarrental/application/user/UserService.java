@@ -5,6 +5,7 @@ import com.aicarrental.api.user.request.UpdateUserRequest;
 import com.aicarrental.api.user.response.UserResponse;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
+import com.aicarrental.domain.auth.Role;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.infrastructure.persistence.UserRepository;
@@ -19,15 +20,14 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class UserService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+
     public UserResponse createUser(CreateUserRequest request) {
         User currentUser = getCurrentUser();
-        Tenant currentTenant = currentUser.getTenant();
-
-        if (currentTenant == null) {
-            throw new BusinessException("Current user is not assigned to any tenant");
-        }
+        validateUserCreationPermission(currentUser, request.role());
+        Tenant currentTenant = getCurrentTenant();
 
         if (userRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email already exists");
@@ -51,31 +51,32 @@ public class UserService {
 
         return mapToResponse(savedUser);
     }
+
     public List<UserResponse> getAllUsers() {
         User currentUser = getCurrentUser();
-        Long tenantId = currentUser.getTenant().getId();
+
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            return userRepository.findAll()
+                    .stream()
+                    .map(this::mapToResponse)
+                    .toList();
+        }
+
+        Long tenantId = getCurrentTenantId();
 
         return userRepository.findByTenant_Id(tenantId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
+
     public UserResponse getUserById(Long id) {
-        User currentUser = getCurrentUser();
-        Long tenantId = currentUser.getTenant().getId();
-
-        User user = userRepository.findByIdAndTenant_Id(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
+        User user = findUserByIdWithTenantIsolation(id);
         return mapToResponse(user);
     }
 
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        User currentUser = getCurrentUser();
-        Long tenantId = currentUser.getTenant().getId();
-
-        User user = userRepository.findByIdAndTenant_Id(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        User user = findUserByIdWithTenantIsolation(id);
 
         if (request.email() != null && userRepository.existsByEmailAndIdNot(request.email(), id)) {
             throw new BusinessException("Email already exists");
@@ -113,13 +114,22 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        User currentUser = getCurrentUser();
-        Long tenantId = currentUser.getTenant().getId();
-
-        User user = userRepository.findByIdAndTenant_Id(id, tenantId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
+        User user = findUserByIdWithTenantIsolation(id);
         userRepository.delete(user);
+    }
+
+    private User findUserByIdWithTenantIsolation(Long userId) {
+        User currentUser = getCurrentUser();
+
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            return userRepository.findById(userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        }
+
+        Long tenantId = getCurrentTenantId();
+
+        return userRepository.findByIdAndTenant_Id(userId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     private User getCurrentUser() {
@@ -133,6 +143,20 @@ public class UserService {
         }
 
         return user;
+    }
+
+    private Tenant getCurrentTenant() {
+        User currentUser = getCurrentUser();
+
+        if (currentUser.getTenant() == null) {
+            throw new BusinessException("Current user is not assigned to any tenant");
+        }
+
+        return currentUser.getTenant();
+    }
+
+    private Long getCurrentTenantId() {
+        return getCurrentTenant().getId();
     }
 
     private UserResponse mapToResponse(User user) {
@@ -149,5 +173,21 @@ public class UserService {
                 user.getUpdatedAt()
         );
     }
+    private void validateUserCreationPermission(User currentUser, Role requestedRole) {
 
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            // SUPER_ADMIN has full privileges to create users with any role
+            return;
+        }
+
+        if (currentUser.getRole() == Role.TENANT_ADMIN) {
+            if (requestedRole != Role.TENANT_STAFF) {
+                throw new BusinessException("Tenant admin can only create tenant staff users");
+            }
+            return;
+        }
+
+        // TENANT_STAFF lacks the authorization to create new users
+        throw new BusinessException("You are not allowed to create users");
+    }
 }
