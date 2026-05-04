@@ -21,7 +21,10 @@ public record CreateUserRequest(@NotBlank(message = "First name is required")
                                 String password,
 
                                 @NotNull(message = "User role is required")
-                                Role role)
+                                Role role,
+
+                                Long tenantId )
+
 
 {
 }

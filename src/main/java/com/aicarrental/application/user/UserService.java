@@ -8,6 +8,7 @@ import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.domain.auth.Role;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.tenant.Tenant;
+import com.aicarrental.infrastructure.persistence.TenantRepository;
 import com.aicarrental.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,10 +24,13 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TenantRepository tenantRepository;
 
     public UserResponse createUser(CreateUserRequest request) {
         User currentUser = getCurrentUser();
         validateUserCreationPermission(currentUser, request.role());
+        Tenant tenantToAssign = resolveTenantForUserCreation(currentUser, request);
+
         Tenant currentTenant = getCurrentTenant();
 
         if (userRepository.existsByEmail(request.email())) {
@@ -179,7 +183,9 @@ public class UserService {
     private void validateUserCreationPermission(User currentUser, Role requestedRole) {
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
-            // SUPER_ADMIN has full privileges to create users with any role
+            if (requestedRole == Role.SUPER_ADMIN) {
+                throw new BusinessException("SUPER_ADMIN user cannot be created from this endpoint");
+            }
             return;
         }
 
@@ -190,7 +196,23 @@ public class UserService {
             return;
         }
 
-        // TENANT_STAFF lacks the authorization to create new users
         throw new BusinessException("You are not allowed to create users");
+    }
+    private Tenant resolveTenantForUserCreation(User currentUser, CreateUserRequest request) {
+
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            if (request.tenantId() == null) {
+                throw new BusinessException("TenantId is required when SUPER_ADMIN creates a user");
+            }
+
+            return tenantRepository.findByIdAndActiveTrue(request.tenantId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
+        }
+
+        if (request.tenantId() != null) {
+            throw new BusinessException("Only SUPER_ADMIN can assign tenant");
+        }
+
+        return getCurrentTenant();
     }
 }
