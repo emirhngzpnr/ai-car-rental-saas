@@ -3,11 +3,17 @@ package com.aicarrental.application.tenant;
 import com.aicarrental.api.tenant.request.CreateTenantRequest;
 import com.aicarrental.api.tenant.request.UpdateTenantRequest;
 import com.aicarrental.api.tenant.response.TenantResponse;
+import com.aicarrental.common.audit.AuditAction;
+import com.aicarrental.common.audit.AuditEvent;
+import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
+import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -15,8 +21,10 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class TenantService {
     private final TenantRepository tenantRepository;
+    private final AuditEventPublisher auditEventPublisher;
 
     public TenantResponse createTenant(CreateTenantRequest request) {
         if (tenantRepository.existsBySubDomain(request.subDomain())) {
@@ -33,6 +41,18 @@ public class TenantService {
                 .build();
 
         Tenant savedTenant = tenantRepository.save(tenant);
+        User currentUser = getCurrentUser();
+
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                savedTenant.getId(),
+                AuditAction.TENANT_CREATED,
+                "Tenant",
+                savedTenant.getId(),
+                "Tenant created: " + savedTenant.getCompanyName()
+        ));
 
         return mapToResponse(savedTenant);
         }
@@ -67,6 +87,18 @@ public class TenantService {
         }
         tenant.setUpdatedAt(LocalDateTime.now());
         Tenant updatedTenant = tenantRepository.save(tenant);
+        User currentUser = getCurrentUser();
+
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                updatedTenant.getId(),
+                AuditAction.TENANT_UPDATED,
+                "Tenant",
+                updatedTenant.getId(),
+                "Tenant updated: " + updatedTenant.getCompanyName()
+        ));
 
         return mapToResponse(updatedTenant);
     }
@@ -79,6 +111,18 @@ public class TenantService {
         tenant.setUpdatedAt(LocalDateTime.now());
 
         tenantRepository.save(tenant);
+        User currentUser = getCurrentUser();
+
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                tenant.getId(),
+                AuditAction.TENANT_DELETED,
+                "Tenant",
+                tenant.getId(),
+                "Tenant soft deleted: " + tenant.getCompanyName()
+        ));
     }
 
     private TenantResponse mapToResponse(Tenant tenant) {
@@ -92,5 +136,17 @@ public class TenantService {
                 tenant.getCreatedAt(),
                 tenant.getUpdatedAt()
         );
+    }
+    private User getCurrentUser() {
+        Object principal = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+        if (!(principal instanceof User user)) {
+            throw new BusinessException("Authenticated user could not be resolved");
+        }
+
+        return user;
     }
     }
