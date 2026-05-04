@@ -38,18 +38,17 @@ public class TenantService {
         }
 
     public List<TenantResponse> getAllTenants() {
-        return tenantRepository.findAll()
+        return tenantRepository.findByActiveTrue()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
     }
     public TenantResponse getTenantById(Long id) {
-        Tenant tenant = tenantRepository.findById(id)
+        Tenant tenant = tenantRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
         return mapToResponse(tenant);
     }
-
     public TenantResponse updateTenant(Long id, UpdateTenantRequest request) {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
@@ -76,7 +75,10 @@ public class TenantService {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
-        tenantRepository.delete(tenant);
+        tenant.setActive(false);
+        tenant.setUpdatedAt(LocalDateTime.now());
+
+        tenantRepository.save(tenant);
     }
 
     private TenantResponse mapToResponse(Tenant tenant) {
