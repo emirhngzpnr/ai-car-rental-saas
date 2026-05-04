@@ -15,7 +15,8 @@ public class AuditEventListener {
     private final AuditLogRepository auditLogRepository;
 
     @Async
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT,
+                                fallbackExecution = true)
     public void handle(AuditEvent event) {
         AuditLog auditLog = AuditLog.builder()
                 .actorUserId(event.actorUserId())
