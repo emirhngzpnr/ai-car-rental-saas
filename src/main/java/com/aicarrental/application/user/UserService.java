@@ -3,6 +3,9 @@ package com.aicarrental.application.user;
 import com.aicarrental.api.user.request.CreateUserRequest;
 import com.aicarrental.api.user.request.UpdateUserRequest;
 import com.aicarrental.api.user.response.UserResponse;
+import com.aicarrental.common.audit.AuditAction;
+import com.aicarrental.common.audit.AuditEvent;
+import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.domain.auth.Role;
@@ -10,6 +13,7 @@ import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
 import com.aicarrental.infrastructure.persistence.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -20,18 +24,18 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TenantRepository tenantRepository;
+    private final AuditEventPublisher auditEventPublisher;
 
     public UserResponse createUser(CreateUserRequest request) {
         User currentUser = getCurrentUser();
         validateUserCreationPermission(currentUser, request.role());
         Tenant tenantToAssign = resolveTenantForUserCreation(currentUser, request);
-
-        Tenant currentTenant = getCurrentTenant();
 
         if (userRepository.existsByEmail(request.email())) {
             throw new BusinessException("Email already exists");
@@ -46,12 +50,23 @@ public class UserService {
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .role(request.role())
                 .active(true)
-                .tenant(currentTenant)
+                .tenant(tenantToAssign)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();
 
         User savedUser = userRepository.save(user);
+        //                LOG
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                tenantToAssign.getId(),
+                AuditAction.USER_CREATED,
+                "User",
+                savedUser.getId(),
+                "User created: " + savedUser.getEmail()
+        ));
 
         return mapToResponse(savedUser);
     }
@@ -80,6 +95,7 @@ public class UserService {
     }
 
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
+        User currentUser = getCurrentUser();
         User user = findUserByIdWithTenantIsolation(id);
 
         if (request.email() != null && userRepository.existsByEmailAndIdNot(request.email(), id)) {
@@ -113,16 +129,39 @@ public class UserService {
         user.setUpdatedAt(LocalDateTime.now());
 
         User updatedUser = userRepository.save(user);
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                updatedUser.getTenant() != null ? updatedUser.getTenant().getId() : null,
+                AuditAction.USER_UPDATED,
+                "User",
+                updatedUser.getId(),
+                "User updated: " + updatedUser.getEmail()
+        ));
 
         return mapToResponse(updatedUser);
     }
 
     public void deleteUser(Long id) {
+        User currentUser = getCurrentUser();
         User user = findUserByIdWithTenantIsolation(id);
         user.setActive(false);
         user.setUpdatedAt(LocalDateTime.now());
 
         userRepository.save(user);
+
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                user.getTenant() != null ? user.getTenant().getId() : null,
+                AuditAction.USER_DELETED,
+                "User",
+                user.getId(),
+                "User soft deleted: " + user.getEmail()
+        ));
+
     }
 
     private User findUserByIdWithTenantIsolation(Long userId) {
