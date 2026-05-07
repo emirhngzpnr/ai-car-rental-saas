@@ -41,6 +41,17 @@ public class Vehicle {
     @Column(name = "production_year")
     private Integer productionYear;
 
+    @Column(name = "current_mileage", nullable = false)
+    private Integer currentMileage;
+
+
+    @Column(name = "daily_km_limit", nullable = false)
+    private Integer dailyKmLimit;
+
+    @Column(name = "extra_km_price_per_km", nullable = false)
+    private BigDecimal extraKmPricePerKm;
+
+
     @Column(name = "daily_price", nullable = false)
     private BigDecimal dailyPrice;
 
