@@ -10,5 +10,10 @@ public enum AuditAction {
     TENANT_DELETED,
 
     LOGIN_SUCCESS,
-    LOGIN_FAILED
+    LOGIN_FAILED,
+
+    VEHICLE_CREATED,
+    VEHICLE_UPDATED,
+    VEHICLE_DELETED
+
 }
