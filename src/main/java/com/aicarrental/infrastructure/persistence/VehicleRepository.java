@@ -2,6 +2,7 @@ package com.aicarrental.infrastructure.persistence;
 
 import com.aicarrental.domain.vehicle.Vehicle;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +17,7 @@ import java.util.Optional;
  * - Enforce tenant-aware data access
  * - Exclude soft-deleted vehicles from active queries
  */
+@Repository
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     /**
      * Checks whether a vehicle plate number already exists globally.
