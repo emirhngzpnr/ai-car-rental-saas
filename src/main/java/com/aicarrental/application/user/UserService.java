@@ -8,6 +8,7 @@ import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
+import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.Role;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.tenant.Tenant;
@@ -15,7 +16,6 @@ import com.aicarrental.infrastructure.persistence.TenantRepository;
 import com.aicarrental.infrastructure.persistence.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -31,9 +31,10 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final TenantRepository tenantRepository;
     private final AuditEventPublisher auditEventPublisher;
+    private final CurrentUserService currentUserService;
 
     public UserResponse createUser(CreateUserRequest request) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
         validateUserCreationPermission(currentUser, request.role());
         Tenant tenantToAssign = resolveTenantForUserCreation(currentUser, request);
 
@@ -72,7 +73,7 @@ public class UserService {
     }
 
     public List<UserResponse> getAllUsers() {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
             return userRepository.findByActiveTrue()
@@ -81,7 +82,7 @@ public class UserService {
                     .toList();
         }
 
-        Long tenantId = getCurrentTenantId();
+        Long tenantId = currentUserService.getCurrentTenantId();
 
         return userRepository.findByTenant_IdAndActiveTrue(tenantId)
                 .stream()
@@ -95,7 +96,7 @@ public class UserService {
     }
 
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
         User user = findUserByIdWithTenantIsolation(id);
 
         if (request.email() != null && userRepository.existsByEmailAndIdNot(request.email(), id)) {
@@ -144,7 +145,7 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
         User user = findUserByIdWithTenantIsolation(id);
         user.setActive(false);
         user.setUpdatedAt(LocalDateTime.now());
@@ -165,44 +166,17 @@ public class UserService {
     }
 
     private User findUserByIdWithTenantIsolation(Long userId) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         if (currentUser.getRole() == Role.SUPER_ADMIN) {
             return userRepository.findById(userId)
                     .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         }
 
-        Long tenantId = getCurrentTenantId();
+        Long tenantId = currentUserService.getCurrentTenantId();
 
         return userRepository.findByIdAndTenant_IdAndActiveTrue(userId,tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    }
-
-    private User getCurrentUser() {
-        Object principal = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
-
-        if (!(principal instanceof User user)) {
-            throw new BusinessException("Authenticated user could not be resolved");
-        }
-
-        return user;
-    }
-
-    private Tenant getCurrentTenant() {
-        User currentUser = getCurrentUser();
-
-        if (currentUser.getTenant() == null) {
-            throw new BusinessException("Current user is not assigned to any tenant");
-        }
-
-        return currentUser.getTenant();
-    }
-
-    private Long getCurrentTenantId() {
-        return getCurrentTenant().getId();
     }
 
     private UserResponse mapToResponse(User user) {
@@ -252,6 +226,6 @@ public class UserService {
             throw new BusinessException("Only SUPER_ADMIN can assign tenant");
         }
 
-        return getCurrentTenant();
+        return currentUserService.getCurrentTenant();
     }
 }

@@ -8,12 +8,12 @@ import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
+import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -25,6 +25,7 @@ import java.util.List;
 public class TenantService {
     private final TenantRepository tenantRepository;
     private final AuditEventPublisher auditEventPublisher;
+    private final CurrentUserService currentUserService;
 
     public TenantResponse createTenant(CreateTenantRequest request) {
         if (tenantRepository.existsBySubDomain(request.subDomain())) {
@@ -41,7 +42,7 @@ public class TenantService {
                 .build();
 
         Tenant savedTenant = tenantRepository.save(tenant);
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         auditEventPublisher.publish(new AuditEvent(
                 currentUser.getId(),
@@ -87,7 +88,7 @@ public class TenantService {
         }
         tenant.setUpdatedAt(LocalDateTime.now());
         Tenant updatedTenant = tenantRepository.save(tenant);
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         auditEventPublisher.publish(new AuditEvent(
                 currentUser.getId(),
@@ -111,7 +112,7 @@ public class TenantService {
         tenant.setUpdatedAt(LocalDateTime.now());
 
         tenantRepository.save(tenant);
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         auditEventPublisher.publish(new AuditEvent(
                 currentUser.getId(),
@@ -137,16 +138,5 @@ public class TenantService {
                 tenant.getUpdatedAt()
         );
     }
-    private User getCurrentUser() {
-        Object principal = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal();
 
-        if (!(principal instanceof User user)) {
-            throw new BusinessException("Authenticated user could not be resolved");
-        }
-
-        return user;
-    }
     }

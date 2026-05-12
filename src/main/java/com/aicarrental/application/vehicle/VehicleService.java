@@ -8,7 +8,7 @@ import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
-import com.aicarrental.domain.auth.Role;
+import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.domain.vehicle.Vehicle;
@@ -16,7 +16,7 @@ import com.aicarrental.infrastructure.persistence.VehicleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.security.core.context.SecurityContextHolder;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,28 +27,11 @@ import java.util.List;
 public class VehicleService {
     private final VehicleRepository vehicleRepository;
     private final AuditEventPublisher auditEventPublisher;
-
-    private User getCurrentUser(){
-Object principal = SecurityContextHolder
-        .getContext()
-        .getAuthentication()
-        .getPrincipal();
-
-if(!(principal instanceof User user)){
-    throw new BusinessException("Authenticated user could not be found");
-}
-return user;
-    }
-
-    private Boolean isSuperAdmin(User user) {
-
-        return user.getRole()== Role.SUPER_ADMIN;
-
-    }
+    private final CurrentUserService currentUserService;
 
 
     public VehicleResponse createVehicle(CreateVehicleRequest request) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         Tenant currentTenant = currentUser.getTenant();
 
@@ -94,17 +77,16 @@ return user;
         return mapToResponse(savedVehicle);
     }
     public List<VehicleResponse> getAllVehicles() {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
-        if (isSuperAdmin(currentUser)) {
+        if (currentUserService.isSuperAdmin(currentUser)) {
             return vehicleRepository.findByActiveTrue()
                     .stream()
                     .map(this::mapToResponse)
                     .toList();
         }
 
-        Long tenantId = getCurrentTenantId();
-
+        Long tenantId = currentUserService.getCurrentTenantId();
         return vehicleRepository.findByTenant_IdAndActiveTrue(tenantId)
                 .stream()
                 .map(this::mapToResponse)
@@ -115,7 +97,7 @@ return user;
         return mapToResponse(vehicle);
     }
     public VehicleResponse updateVehicle(Long id, UpdateVehicleRequest request) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         Vehicle vehicle = findVehicleByIdWithTenantIsolation(id);
 
@@ -151,7 +133,7 @@ return user;
         return mapToResponse(updatedVehicle);
     }
     public void deleteVehicle(Long id) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
         Vehicle vehicle = findVehicleByIdWithTenantIsolation(id);
 
@@ -190,24 +172,15 @@ return user;
                 vehicle.getUpdatedAt()
         );
     }
-    private Long getCurrentTenantId() {
-        User currentUser = getCurrentUser();
-
-        if (currentUser.getTenant() == null) {
-            throw new BusinessException("Current user is not assigned to any tenant");
-        }
-
-        return currentUser.getTenant().getId();
-    }
     private Vehicle findVehicleByIdWithTenantIsolation(Long vehicleId) {
-        User currentUser = getCurrentUser();
+        User currentUser = currentUserService.getCurrentUser();
 
-        if (isSuperAdmin(currentUser)) {
+        if (currentUserService.isSuperAdmin(currentUser)) {
             return vehicleRepository.findByIdAndActiveTrue(vehicleId)
                     .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
         }
 
-        Long tenantId = getCurrentTenantId();
+        Long tenantId = currentUserService.getCurrentTenantId();
 
         return vehicleRepository.findByIdAndTenant_IdAndActiveTrue(vehicleId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
