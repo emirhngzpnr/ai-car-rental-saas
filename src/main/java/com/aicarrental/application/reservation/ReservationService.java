@@ -139,6 +139,73 @@ public class ReservationService {
 
         return mapToResponse(savedReservation);
     }
+    public List<ReservationResponse> getAllReservations() {
+        User currentUser = currentUserService.getCurrentUser();
+
+        if (currentUserService.isSuperAdmin(currentUser)) {
+            return reservationRepository.findByActiveTrue()
+                    .stream()
+                    .map(this::mapToResponse)
+                    .toList();
+        }
+
+        Long tenantId = currentUserService.getCurrentTenantId();
+
+        return reservationRepository.findByTenant_IdAndActiveTrue(tenantId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+    public ReservationResponse getReservationById(Long id) {
+        Reservation reservation = findReservationByIdWithTenantIsolation(id);
+        return mapToResponse(reservation);
+    }
+    public void cancelReservation(Long id) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        Reservation reservation = findReservationByIdWithTenantIsolation(id);
+
+        if (reservation.getStatus() == ReservationStatus.CONVERTED_TO_RENTAL) {
+            throw new BusinessException("Converted reservation cannot be cancelled");
+        }
+
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            throw new BusinessException("Reservation is already cancelled");
+        }
+
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setActive(false);
+        reservation.setUpdatedAt(LocalDateTime.now());
+
+        Reservation cancelledReservation = reservationRepository.save(reservation);
+
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                cancelledReservation.getTenant() != null ? cancelledReservation.getTenant().getId() : null,
+                AuditAction.RESERVATION_CANCELLED,
+                "Reservation",
+                cancelledReservation.getId(),
+                "Reservation cancelled for vehicle: " +
+                        (cancelledReservation.getVehicle() != null
+                                ? cancelledReservation.getVehicle().getPlateNumber()
+                                : "unknown")
+        ));
+    }
+    private Reservation findReservationByIdWithTenantIsolation(Long reservationId) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        if (currentUserService.isSuperAdmin(currentUser)) {
+            return reservationRepository.findByIdAndActiveTrue(reservationId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+        }
+
+        Long tenantId = currentUserService.getCurrentTenantId();
+
+        return reservationRepository.findByIdAndTenant_IdAndActiveTrue(reservationId, tenantId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+    }
     private Vehicle findVehicleByIdWithTenantIsolation(Long vehicleId) {
         User currentUser = currentUserService.getCurrentUser();
 
