@@ -2,6 +2,7 @@ package com.aicarrental.infrastructure.persistence;
 
 import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.vehicle.Vehicle;
+import com.aicarrental.domain.vehicle.VehicleStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -76,7 +77,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
         SELECT v
         FROM Vehicle v
         WHERE v.active = true
-          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+         AND v.status = :availableStatus
           AND v.id NOT IN (
               SELECT r.vehicle.id
               FROM Reservation r
@@ -89,7 +90,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     List<Vehicle> findAvailableVehicles(
             @Param("pickupDateTime") LocalDateTime pickupDateTime,
             @Param("returnDateTime") LocalDateTime returnDateTime,
-            @Param("blockingStatuses") List<ReservationStatus> blockingStatuses
+            @Param("blockingStatuses") List<ReservationStatus> blockingStatuses,
+            @Param("availableStatus") VehicleStatus availableStatus
     );
 
     @Query("""
@@ -97,7 +99,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
         FROM Vehicle v
         WHERE v.active = true
           AND v.tenant.id = :tenantId
-          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+         AND v.status = :availableStatus
           AND v.id NOT IN (
               SELECT r.vehicle.id
               FROM Reservation r
@@ -111,6 +113,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
             @Param("tenantId") Long tenantId,
             @Param("pickupDateTime") LocalDateTime pickupDateTime,
             @Param("returnDateTime") LocalDateTime returnDateTime,
-            @Param("blockingStatuses") List<ReservationStatus> blockingStatuses
+            @Param("blockingStatuses") List<ReservationStatus> blockingStatuses,
+            @Param("availableStatus") VehicleStatus availableStatus
     );
 }

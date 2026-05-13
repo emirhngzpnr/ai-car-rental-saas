@@ -13,6 +13,7 @@ import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.domain.vehicle.Vehicle;
+import com.aicarrental.domain.vehicle.VehicleStatus;
 import com.aicarrental.infrastructure.persistence.VehicleRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -158,6 +159,10 @@ public class VehicleService {
             LocalDateTime pickupDateTime,
             LocalDateTime returnDateTime
     ) {
+        LocalDateTime now = LocalDateTime.now();
+        if (pickupDateTime.isBefore(now)) {
+            throw new BusinessException("Pickup date cannot be in the past");
+        }
         if (returnDateTime.isBefore(pickupDateTime) || returnDateTime.isEqual(pickupDateTime)) {
             throw new BusinessException("Return date must be after pickup date");
         }
@@ -175,7 +180,8 @@ public class VehicleService {
             availableVehicles = vehicleRepository.findAvailableVehicles(
                     pickupDateTime,
                     returnDateTime,
-                    blockingStatuses
+                    blockingStatuses,
+                    VehicleStatus.AVAILABLE
             );
         } else {
             Long tenantId = currentUserService.getCurrentTenantId();
@@ -184,7 +190,8 @@ public class VehicleService {
                     tenantId,
                     pickupDateTime,
                     returnDateTime,
-                    blockingStatuses
+                    blockingStatuses,
+                    VehicleStatus.AVAILABLE
             );
         }
 
