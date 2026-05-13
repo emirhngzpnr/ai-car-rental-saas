@@ -25,4 +25,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             LocalDateTime returnDateTime,
             LocalDateTime pickupDateTime
     );
+    List<Reservation> findByStatusAndActiveTrueAndCreatedAtBefore(
+            ReservationStatus status,
+            LocalDateTime createdBefore
+    );
 }
