@@ -7,11 +7,13 @@ import com.aicarrental.application.vehicle.VehicleService;
 import com.aicarrental.domain.vehicle.Vehicle;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -60,5 +62,20 @@ public class VehicleController {
     ) {
         vehicleService.deleteVehicle(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<List<VehicleResponse>> getAvailableVehicles(
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime pickupDateTime,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+            LocalDateTime returnDateTime
+    ) {
+        return ResponseEntity.ok(
+                vehicleService.getAvailableVehicles(pickupDateTime, returnDateTime)
+        );
     }
 }

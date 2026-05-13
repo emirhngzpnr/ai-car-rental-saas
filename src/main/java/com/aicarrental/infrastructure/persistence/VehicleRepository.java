@@ -1,9 +1,13 @@
 package com.aicarrental.infrastructure.persistence;
 
+import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.vehicle.Vehicle;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 /**
@@ -67,4 +71,46 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
      * and prevents cross-tenant data access vulnerabilities.
      */
     Optional<Vehicle> findByIdAndTenant_IdAndActiveTrue(Long id, Long tenantId);
+
+    @Query("""
+        SELECT v
+        FROM Vehicle v
+        WHERE v.active = true
+          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+          AND v.id NOT IN (
+              SELECT r.vehicle.id
+              FROM Reservation r
+              WHERE r.active = true
+                AND r.status IN :blockingStatuses
+                AND r.pickupDateTime < :returnDateTime
+                AND r.returnDateTime > :pickupDateTime
+          )
+        """)
+    List<Vehicle> findAvailableVehicles(
+            @Param("pickupDateTime") LocalDateTime pickupDateTime,
+            @Param("returnDateTime") LocalDateTime returnDateTime,
+            @Param("blockingStatuses") List<ReservationStatus> blockingStatuses
+    );
+
+    @Query("""
+        SELECT v
+        FROM Vehicle v
+        WHERE v.active = true
+          AND v.tenant.id = :tenantId
+          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+          AND v.id NOT IN (
+              SELECT r.vehicle.id
+              FROM Reservation r
+              WHERE r.active = true
+                AND r.status IN :blockingStatuses
+                AND r.pickupDateTime < :returnDateTime
+                AND r.returnDateTime > :pickupDateTime
+          )
+        """)
+    List<Vehicle> findAvailableVehiclesByTenant(
+            @Param("tenantId") Long tenantId,
+            @Param("pickupDateTime") LocalDateTime pickupDateTime,
+            @Param("returnDateTime") LocalDateTime returnDateTime,
+            @Param("blockingStatuses") List<ReservationStatus> blockingStatuses
+    );
 }
