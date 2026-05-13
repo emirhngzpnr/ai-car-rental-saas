@@ -1,5 +1,6 @@
 package com.aicarrental.application.rental;
 
+import com.aicarrental.api.rental.request.CompleteRentalRequest;
 import com.aicarrental.api.rental.request.StartRentalRequest;
 import com.aicarrental.api.rental.response.RentalResponse;
 import com.aicarrental.common.audit.AuditAction;
@@ -22,6 +23,8 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -135,7 +138,75 @@ public class RentalService {
 
         return mapToResponse(rental);
     }
+    public RentalResponse completeRental(Long rentalId, CompleteRentalRequest request){
+        User currentUser = currentUserService.getCurrentUser();
 
+        Rental rental = findRentalByIdWithTenantIsolation(rentalId);
+
+        if (rental.getStatus() != RentalStatus.ACTIVE) {
+            throw new BusinessException("Rental is not active");
+        }
+
+        if (request.endMileage() < rental.getStartMileage()) {
+            throw new BusinessException("End mileage cannot be lower than start mileage");
+        }
+
+        int usedKm = request.endMileage() - rental.getStartMileage();
+
+        int extraKm = Math.max(0, usedKm - rental.getAllowedKm());
+
+        BigDecimal extraKmFee = rental.getReservation()
+                .getExtraKmPricePerKmSnapshot()
+                .multiply(BigDecimal.valueOf(extraKm))
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal finalRentalPrice = rental.getReservation()
+                .getEstimatedRentalPrice()
+                .add(extraKmFee)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal deposit = rental.getReservation().getDepositAmount();
+
+        BigDecimal depositDeduction = extraKmFee.min(deposit)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal refundAmount = deposit.subtract(depositDeduction)
+                .max(BigDecimal.ZERO)
+                .setScale(2, RoundingMode.HALF_UP);
+
+        rental.setActualReturnDateTime(request.actualReturnDateTime());
+        rental.setEndMileage(request.endMileage());
+        rental.setUsedKm(usedKm);
+        rental.setExtraKm(extraKm);
+        rental.setExtraKmFee(extraKmFee);
+        rental.setFinalRentalPrice(finalRentalPrice);
+        rental.setDepositDeduction(depositDeduction);
+        rental.setRefundAmount(refundAmount);
+        rental.setStatus(RentalStatus.COMPLETED);
+        rental.setUpdatedAt(LocalDateTime.now());
+
+        Vehicle vehicle = rental.getVehicle();
+        vehicle.setStatus(VehicleStatus.AVAILABLE);
+        vehicle.setCurrentMileage(request.endMileage());
+        vehicle.setUpdatedAt(LocalDateTime.now());
+
+        vehicleRepository.save(vehicle);
+
+        Rental completedRental = rentalRepository.save(rental);
+
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                completedRental.getTenant() != null ? completedRental.getTenant().getId() : null,
+                AuditAction.RENTAL_COMPLETED,
+                "Rental",
+                completedRental.getId(),
+                "Rental completed for vehicle: " + vehicle.getPlateNumber()
+        ));
+
+        return mapToResponse(completedRental);
+    }
     private Rental findRentalByIdWithTenantIsolation(Long rentalId) {
 
         User currentUser = currentUserService.getCurrentUser();
