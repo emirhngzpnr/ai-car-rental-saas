@@ -10,10 +10,12 @@ import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.Role;
 import com.aicarrental.domain.auth.User;
+import com.aicarrental.domain.insurance.InsurancePackage;
 import com.aicarrental.domain.reservation.Reservation;
 import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.vehicle.Vehicle;
 import com.aicarrental.domain.vehicle.VehicleStatus;
+import com.aicarrental.infrastructure.persistence.InsurancePackageRepository;
 import com.aicarrental.infrastructure.persistence.ReservationRepository;
 import com.aicarrental.infrastructure.persistence.VehicleRepository;
 import jakarta.transaction.Transactional;
@@ -30,19 +32,17 @@ import java.util.List;
 @RequiredArgsConstructor
 @Transactional
 public class ReservationService {
+
     private final ReservationRepository reservationRepository;
     private final VehicleRepository vehicleRepository;
+    private final InsurancePackageRepository insurancePackageRepository;
     private final AuditEventPublisher auditEventPublisher;
     private final CurrentUserService currentUserService;
-
-
-
 
     private boolean isSuperAdmin(User user) {
         return user.getRole() == Role.SUPER_ADMIN;
     }
 
-    // Create Reservation
     public ReservationResponse createReservation(CreateReservationRequest request) {
 
         User currentUser = currentUserService.getCurrentUser();
@@ -86,12 +86,30 @@ public class ReservationService {
                 vehicle.getDailyPrice()
                         .multiply(BigDecimal.valueOf(rentalDays));
 
+        InsurancePackage insurancePackage = null;
+        BigDecimal insuranceTotalPrice = BigDecimal.ZERO;
+
+        if (request.insurancePackageId() != null) {
+            insurancePackage = insurancePackageRepository
+                    .findByIdAndTenant_IdAndActiveTrue(
+                            request.insurancePackageId(),
+                            vehicle.getTenant().getId()
+                    )
+                    .orElseThrow(() -> new ResourceNotFoundException("Insurance package not found"));
+
+            insuranceTotalPrice = insurancePackage.getDailyPrice()
+                    .multiply(BigDecimal.valueOf(rentalDays))
+                    .setScale(2, RoundingMode.HALF_UP);
+        }
+
         BigDecimal depositAmount =
                 estimatedRentalPrice.multiply(BigDecimal.valueOf(0.30))
                         .setScale(2, RoundingMode.HALF_UP);
 
         BigDecimal totalEstimatedPrice =
-                estimatedRentalPrice.add(depositAmount);
+                estimatedRentalPrice
+                        .add(depositAmount)
+                        .add(insuranceTotalPrice);
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -110,6 +128,20 @@ public class ReservationService {
                 .dailyPriceSnapshot(vehicle.getDailyPrice())
                 .dailyKmLimitSnapshot(vehicle.getDailyKmLimit())
                 .extraKmPricePerKmSnapshot(vehicle.getExtraKmPricePerKm())
+
+                .insurancePackage(insurancePackage)
+                .insurancePackageNameSnapshot(
+                        insurancePackage != null ? insurancePackage.getName() : null
+                )
+                .insurancePackageTypeSnapshot(
+                        insurancePackage != null ? insurancePackage.getType().name() : null
+                )
+                .insuranceDailyPriceSnapshot(
+                        insurancePackage != null ? insurancePackage.getDailyPrice() : null
+                )
+                .insuranceTotalPriceSnapshot(
+                        insurancePackage != null ? insuranceTotalPrice : null
+                )
 
                 .depositAmount(depositAmount)
                 .estimatedRentalPrice(estimatedRentalPrice)
@@ -138,6 +170,7 @@ public class ReservationService {
 
         return mapToResponse(savedReservation);
     }
+
     public List<ReservationResponse> getAllReservations() {
         User currentUser = currentUserService.getCurrentUser();
 
@@ -155,10 +188,12 @@ public class ReservationService {
                 .map(this::mapToResponse)
                 .toList();
     }
+
     public ReservationResponse getReservationById(Long id) {
         Reservation reservation = findReservationByIdWithTenantIsolation(id);
         return mapToResponse(reservation);
     }
+
     public void cancelReservation(Long id) {
         User currentUser = currentUserService.getCurrentUser();
 
@@ -192,6 +227,7 @@ public class ReservationService {
                                 : "unknown")
         ));
     }
+
     private Reservation findReservationByIdWithTenantIsolation(Long reservationId) {
         User currentUser = currentUserService.getCurrentUser();
 
@@ -205,6 +241,7 @@ public class ReservationService {
         return reservationRepository.findByIdAndTenant_IdAndActiveTrue(reservationId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
     }
+
     private Vehicle findVehicleByIdWithTenantIsolation(Long vehicleId) {
         User currentUser = currentUserService.getCurrentUser();
 
@@ -252,6 +289,12 @@ public class ReservationService {
                 reservation.getDailyPriceSnapshot(),
                 reservation.getDailyKmLimitSnapshot(),
                 reservation.getExtraKmPricePerKmSnapshot(),
+
+                reservation.getInsurancePackage() != null ? reservation.getInsurancePackage().getId() : null,
+                reservation.getInsurancePackageNameSnapshot(),
+                reservation.getInsurancePackageTypeSnapshot(),
+                reservation.getInsuranceDailyPriceSnapshot(),
+                reservation.getInsuranceTotalPriceSnapshot(),
 
                 reservation.getDepositAmount(),
                 reservation.getEstimatedRentalPrice(),

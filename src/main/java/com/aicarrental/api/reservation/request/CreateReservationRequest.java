@@ -26,7 +26,7 @@ public record CreateReservationRequest(@NotNull(message = "Vehicle id is require
                                        @Future(message = "Pickup date must be in the future")
                                        @NotNull(message = "Pickup date is required")
                                        LocalDateTime pickupDateTime,
-
+                                       Long insurancePackageId,
                                        @Future(message = "Return date must be in the future")
                                        @NotNull(message = "Return date is required")
                                        LocalDateTime returnDateTime) {
