@@ -46,4 +46,12 @@ public class ReservationController {
         reservationService.cancelReservation(id);
         return ResponseEntity.noContent().build();
     }
+    @PatchMapping("/{id}/confirm")
+    public ResponseEntity<ReservationResponse> confirmReservation(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                reservationService.confirmReservation(id)
+        );
+    }
 }

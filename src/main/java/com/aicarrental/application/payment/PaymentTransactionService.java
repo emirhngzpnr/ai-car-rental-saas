@@ -91,7 +91,7 @@ public class PaymentTransactionService {
 
             Reservation paidReservation = saved.getReservation();
 
-            paidReservation.setStatus(ReservationStatus.CONFIRMED);
+            paidReservation.setStatus(ReservationStatus.DEPOSIT_PAID);
             paidReservation.setUpdatedAt(LocalDateTime.now());
 
             reservationRepository.save(paidReservation);

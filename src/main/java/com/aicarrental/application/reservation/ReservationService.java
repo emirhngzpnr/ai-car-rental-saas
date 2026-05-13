@@ -265,7 +265,33 @@ public class ReservationService {
 
         return currentUser.getTenant().getId();
     }
+    public ReservationResponse confirmReservation(Long id) {
+        User currentUser = currentUserService.getCurrentUser();
 
+        Reservation reservation = findReservationByIdWithTenantIsolation(id);
+
+        if (reservation.getStatus() != ReservationStatus.DEPOSIT_PAID) {
+            throw new BusinessException("Only deposit paid reservations can be confirmed");
+        }
+
+        reservation.setStatus(ReservationStatus.CONFIRMED);
+        reservation.setUpdatedAt(LocalDateTime.now());
+
+        Reservation confirmedReservation = reservationRepository.save(reservation);
+
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                confirmedReservation.getTenant() != null ? confirmedReservation.getTenant().getId() : null,
+                AuditAction.RESERVATION_UPDATED,
+                "Reservation",
+                confirmedReservation.getId(),
+                "Reservation confirmed after deposit payment"
+        ));
+
+        return mapToResponse(confirmedReservation);
+    }
     private ReservationResponse mapToResponse(Reservation reservation) {
         return new ReservationResponse(
                 reservation.getId(),
