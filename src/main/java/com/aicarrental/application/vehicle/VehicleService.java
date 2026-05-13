@@ -10,6 +10,7 @@ import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.User;
+import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.domain.vehicle.Vehicle;
 import com.aicarrental.infrastructure.persistence.VehicleRepository;
@@ -152,6 +153,45 @@ public class VehicleService {
                 deletedVehicle.getId(),
                 "Vehicle soft deleted: " + deletedVehicle.getPlateNumber()
         ));
+    }
+    public List<VehicleResponse> getAvailableVehicles(
+            LocalDateTime pickupDateTime,
+            LocalDateTime returnDateTime
+    ) {
+        if (returnDateTime.isBefore(pickupDateTime) || returnDateTime.isEqual(pickupDateTime)) {
+            throw new BusinessException("Return date must be after pickup date");
+        }
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        List<ReservationStatus> blockingStatuses = List.of(
+                ReservationStatus.PENDING_PAYMENT,
+                ReservationStatus.CONFIRMED
+        );
+
+        List<Vehicle> availableVehicles;
+
+        if (currentUserService.isSuperAdmin(currentUser)) {
+            availableVehicles = vehicleRepository.findAvailableVehicles(
+                    pickupDateTime,
+                    returnDateTime,
+                    blockingStatuses
+            );
+        } else {
+            Long tenantId = currentUserService.getCurrentTenantId();
+
+            availableVehicles = vehicleRepository.findAvailableVehiclesByTenant(
+                    tenantId,
+                    pickupDateTime,
+                    returnDateTime,
+                    blockingStatuses
+            );
+        }
+
+        return availableVehicles
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
     private VehicleResponse mapToResponse(Vehicle vehicle) {
         return new VehicleResponse(
