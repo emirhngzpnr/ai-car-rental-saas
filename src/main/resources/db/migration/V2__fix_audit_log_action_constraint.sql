@@ -1,0 +1,31 @@
+ALTER TABLE rental.audit_logs
+DROP CONSTRAINT IF EXISTS audit_logs_action_check;
+
+ALTER TABLE rental.audit_logs
+    ADD CONSTRAINT audit_logs_action_check
+        CHECK (
+    action IN (
+    'USER_CREATED',
+    'USER_UPDATED',
+    'USER_DELETED',
+
+    'TENANT_CREATED',
+    'TENANT_UPDATED',
+    'TENANT_DELETED',
+
+    'LOGIN_SUCCESS',
+    'LOGIN_FAILED',
+
+    'VEHICLE_CREATED',
+    'VEHICLE_UPDATED',
+    'VEHICLE_DELETED',
+
+    'RESERVATION_CREATED',
+    'RESERVATION_UPDATED',
+    'RESERVATION_CANCELLED',
+
+    'RENTAL_STARTED',
+    'RENTAL_COMPLETED',
+    'RENTAL_CANCELLED'
+    )
+    );
