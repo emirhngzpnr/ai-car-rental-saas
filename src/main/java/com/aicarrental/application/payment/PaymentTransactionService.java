@@ -11,7 +11,9 @@ import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.payment.PaymentStatus;
 import com.aicarrental.domain.payment.PaymentTransaction;
+import com.aicarrental.domain.payment.PaymentType;
 import com.aicarrental.domain.reservation.Reservation;
+import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.infrastructure.persistence.PaymentTransactionRepository;
 import com.aicarrental.infrastructure.persistence.ReservationRepository;
@@ -55,7 +57,18 @@ public class PaymentTransactionService {
                 throw new BusinessException("Reservation does not belong to tenant");
             }
         }
+        if (request.paymentType() == PaymentType.DEPOSIT_PAYMENT) {
+            boolean depositAlreadyPaid =
+                    paymentTransactionRepository.existsByReservation_IdAndPaymentTypeAndPaymentStatus(
+                            reservation.getId(),
+                            PaymentType.DEPOSIT_PAYMENT,
+                            PaymentStatus.SUCCESS
+                    );
 
+            if (depositAlreadyPaid) {
+                throw new BusinessException("Deposit payment already completed for this reservation");
+            }
+        }
         LocalDateTime now = LocalDateTime.now();
 
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
@@ -72,7 +85,17 @@ public class PaymentTransactionService {
                 .build();
 
         PaymentTransaction saved = paymentTransactionRepository.save(paymentTransaction);
+        if (saved.getPaymentType() == PaymentType.DEPOSIT_PAYMENT
+                && saved.getPaymentStatus() == PaymentStatus.SUCCESS
+                && saved.getReservation() != null) {
 
+            Reservation paidReservation = saved.getReservation();
+
+            paidReservation.setStatus(ReservationStatus.CONFIRMED);
+            paidReservation.setUpdatedAt(LocalDateTime.now());
+
+            reservationRepository.save(paidReservation);
+        }
         User currentUser = currentUserService.getCurrentUser();
 
         auditEventPublisher.publish(new AuditEvent(
