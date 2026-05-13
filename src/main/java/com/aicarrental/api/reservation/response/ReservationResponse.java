@@ -26,6 +26,12 @@ public record ReservationResponse(
         Integer dailyKmLimitSnapshot,
         BigDecimal extraKmPricePerKmSnapshot,
 
+        Long insurancePackageId,
+        String insurancePackageNameSnapshot,
+        String insurancePackageTypeSnapshot,
+        BigDecimal insuranceDailyPriceSnapshot,
+        BigDecimal insuranceTotalPriceSnapshot,
+
         BigDecimal depositAmount,
         BigDecimal estimatedRentalPrice,
         BigDecimal totalEstimatedPrice,

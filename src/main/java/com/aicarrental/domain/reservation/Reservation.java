@@ -1,6 +1,7 @@
 package com.aicarrental.domain.reservation;
 
 
+import com.aicarrental.domain.insurance.InsurancePackage;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.domain.vehicle.Vehicle;
 import jakarta.persistence.Entity;
@@ -77,4 +78,20 @@ public class Reservation {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "insurance_package_id")
+    private InsurancePackage insurancePackage;
+
+    @Column(name = "insurance_package_name_snapshot", length = 100)
+    private String insurancePackageNameSnapshot;
+
+    @Column(name = "insurance_package_type_snapshot", length = 50)
+    private String insurancePackageTypeSnapshot;
+
+    @Column(name = "insurance_daily_price_snapshot", precision = 12, scale = 2)
+    private BigDecimal insuranceDailyPriceSnapshot;
+
+    @Column(name = "insurance_total_price_snapshot", precision = 12, scale = 2)
+    private BigDecimal insuranceTotalPriceSnapshot;
 }
