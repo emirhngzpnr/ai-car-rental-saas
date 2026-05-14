@@ -2,6 +2,7 @@ package com.aicarrental.application.payment;
 
 import com.aicarrental.api.payment.request.CreatePaymentRequest;
 import com.aicarrental.api.payment.response.PaymentTransactionResponse;
+import com.aicarrental.application.outbox.OutboxMessageService;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
@@ -10,13 +11,13 @@ import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.User;
+import com.aicarrental.domain.outbox.OutboxEventType;
 import com.aicarrental.domain.payment.PaymentStatus;
 import com.aicarrental.domain.payment.PaymentTransaction;
 import com.aicarrental.domain.payment.PaymentType;
 import com.aicarrental.domain.reservation.Reservation;
 import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.tenant.Tenant;
-import com.aicarrental.infrastructure.kafka.PaymentEventProducer;
 import com.aicarrental.infrastructure.persistence.PaymentTransactionRepository;
 import com.aicarrental.infrastructure.persistence.ReservationRepository;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
@@ -36,7 +37,7 @@ public class PaymentTransactionService {
     private final ReservationRepository reservationRepository;
     private final AuditEventPublisher auditEventPublisher;
     private final CurrentUserService currentUserService;
-    private final PaymentEventProducer paymentEventProducer;
+    private final OutboxMessageService outboxMessageService;
 
     public PaymentTransactionResponse createPayment(CreatePaymentRequest request) {
 
@@ -119,7 +120,10 @@ public class PaymentTransactionService {
                         + ", Amount: " + saved.getAmount()
                         + " " + saved.getCurrency()
         ));
-        paymentEventProducer.publishPaymentCompleted(
+        outboxMessageService.createOutboxMessage(
+                "payment-completed",
+                String.valueOf(saved.getId()),
+                OutboxEventType.PAYMENT_COMPLETED,
                 new PaymentCompletedEvent(
                         saved.getId(),
                         saved.getReservation() != null ? saved.getReservation().getId() : null,
