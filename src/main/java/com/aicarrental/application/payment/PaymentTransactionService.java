@@ -5,6 +5,7 @@ import com.aicarrental.api.payment.response.PaymentTransactionResponse;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
+import com.aicarrental.common.event.PaymentCompletedEvent;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.common.security.CurrentUserService;
@@ -15,6 +16,7 @@ import com.aicarrental.domain.payment.PaymentType;
 import com.aicarrental.domain.reservation.Reservation;
 import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.tenant.Tenant;
+import com.aicarrental.infrastructure.kafka.PaymentEventProducer;
 import com.aicarrental.infrastructure.persistence.PaymentTransactionRepository;
 import com.aicarrental.infrastructure.persistence.ReservationRepository;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
@@ -34,6 +36,7 @@ public class PaymentTransactionService {
     private final ReservationRepository reservationRepository;
     private final AuditEventPublisher auditEventPublisher;
     private final CurrentUserService currentUserService;
+    private final PaymentEventProducer paymentEventProducer;
 
     public PaymentTransactionResponse createPayment(CreatePaymentRequest request) {
 
@@ -57,6 +60,10 @@ public class PaymentTransactionService {
                 throw new BusinessException("Reservation does not belong to tenant");
             }
         }
+        if (request.paymentType() == PaymentType.DEPOSIT_PAYMENT && reservation == null) {
+            throw new BusinessException("Deposit payment must be linked to a reservation");
+        }
+
         if (request.paymentType() == PaymentType.DEPOSIT_PAYMENT) {
             boolean depositAlreadyPaid =
                     paymentTransactionRepository.existsByReservation_IdAndPaymentTypeAndPaymentStatus(
@@ -85,6 +92,7 @@ public class PaymentTransactionService {
                 .build();
 
         PaymentTransaction saved = paymentTransactionRepository.save(paymentTransaction);
+
         if (saved.getPaymentType() == PaymentType.DEPOSIT_PAYMENT
                 && saved.getPaymentStatus() == PaymentStatus.SUCCESS
                 && saved.getReservation() != null) {
@@ -96,6 +104,7 @@ public class PaymentTransactionService {
 
             reservationRepository.save(paidReservation);
         }
+
         User currentUser = currentUserService.getCurrentUser();
 
         auditEventPublisher.publish(new AuditEvent(
@@ -110,6 +119,17 @@ public class PaymentTransactionService {
                         + ", Amount: " + saved.getAmount()
                         + " " + saved.getCurrency()
         ));
+        paymentEventProducer.publishPaymentCompleted(
+                new PaymentCompletedEvent(
+                        saved.getId(),
+                        saved.getReservation() != null ? saved.getReservation().getId() : null,
+                        saved.getTenant() != null ? saved.getTenant().getId() : null,
+                        saved.getAmount(),
+                        saved.getCurrency(),
+                        saved.getPaymentType().name(),
+                        LocalDateTime.now()
+                )
+        );
 
         return mapToResponse(saved);
     }
