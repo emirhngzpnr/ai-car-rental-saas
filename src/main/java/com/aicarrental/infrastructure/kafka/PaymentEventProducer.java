@@ -4,7 +4,10 @@ import com.aicarrental.common.event.PaymentCompletedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
+
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Component
@@ -14,13 +17,23 @@ public class PaymentEventProducer {
 
     private final KafkaTemplate<String, Object> kafkaTemplate;
 
-    public void publishPaymentCompleted(PaymentCompletedEvent event) {
-        kafkaTemplate.send(
-                PAYMENT_COMPLETED_TOPIC,
-                String.valueOf(event.paymentId()),
-                event
-        ).whenComplete((result, exception) -> {
+    public CompletableFuture<SendResult<String, Object>>
+    publishPaymentCompleted(
+            PaymentCompletedEvent event,
+            String messageKey
+    ) {
+
+        CompletableFuture<SendResult<String, Object>> future =
+                kafkaTemplate.send(
+                        PAYMENT_COMPLETED_TOPIC,
+                        messageKey,
+                        event
+                );
+
+        future.whenComplete((result, exception) -> {
+
             if (exception == null) {
+
                 log.info(
                         "PaymentCompletedEvent successfully published for paymentId={} to topic={}, partition={}, offset={}",
                         event.paymentId(),
@@ -28,7 +41,9 @@ public class PaymentEventProducer {
                         result.getRecordMetadata().partition(),
                         result.getRecordMetadata().offset()
                 );
+
             } else {
+
                 log.error(
                         "Failed to publish PaymentCompletedEvent for paymentId={}. Reason={}",
                         event.paymentId(),
@@ -37,5 +52,7 @@ public class PaymentEventProducer {
                 );
             }
         });
+
+        return future;
     }
 }
