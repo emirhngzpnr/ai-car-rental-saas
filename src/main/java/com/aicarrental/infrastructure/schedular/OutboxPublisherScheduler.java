@@ -1,10 +1,12 @@
 package com.aicarrental.infrastructure.schedular;
 
 import com.aicarrental.common.event.PaymentCompletedEvent;
+import com.aicarrental.common.event.RentalCompletedEvent;
 import com.aicarrental.domain.outbox.OutboxEventType;
 import com.aicarrental.domain.outbox.OutboxMessage;
 import com.aicarrental.domain.outbox.OutboxMessageStatus;
 import com.aicarrental.infrastructure.kafka.PaymentEventProducer;
+import com.aicarrental.infrastructure.kafka.RentalEventProducer;
 import com.aicarrental.infrastructure.persistence.OutboxMessageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Component
@@ -27,6 +30,7 @@ public class OutboxPublisherScheduler {
     private final OutboxMessageRepository outboxMessageRepository;
     private final PaymentEventProducer paymentEventProducer;
     private final ObjectMapper objectMapper;
+    private final RentalEventProducer rentalEventProducer;
 
     @Scheduled(fixedRate = 10_000)
     @Transactional
@@ -85,7 +89,22 @@ public class OutboxPublisherScheduler {
             future.get(3, java.util.concurrent.TimeUnit.SECONDS);
             return;
         }
+        if (message.getEventType() == OutboxEventType.RENTAL_COMPLETED) {
+            RentalCompletedEvent event =
+                    objectMapper.readValue(
+                            message.getPayload(),
+                            RentalCompletedEvent.class
+                    );
 
+            CompletableFuture<SendResult<String, Object>> future =
+                    rentalEventProducer.publishRentalCompleted(
+                            event,
+                            message.getMessageKey()
+                    );
+
+            future.get(3, TimeUnit.SECONDS);
+            return;
+        }
         throw new IllegalArgumentException(
                 "Unsupported outbox event type: " + message.getEventType()
         );

@@ -6,5 +6,7 @@ public enum OutboxEventType {
 
     RESERVATION_CONFIRMED,
 
-    RESERVATION_EXPIRED
+    RESERVATION_EXPIRED,
+
+    RENTAL_COMPLETED
 }
