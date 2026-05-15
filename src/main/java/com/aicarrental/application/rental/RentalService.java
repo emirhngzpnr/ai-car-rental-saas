@@ -3,13 +3,16 @@ package com.aicarrental.application.rental;
 import com.aicarrental.api.rental.request.CompleteRentalRequest;
 import com.aicarrental.api.rental.request.StartRentalRequest;
 import com.aicarrental.api.rental.response.RentalResponse;
+import com.aicarrental.application.outbox.OutboxMessageService;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
+import com.aicarrental.common.event.RentalCompletedEvent;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.User;
+import com.aicarrental.domain.outbox.OutboxEventType;
 import com.aicarrental.domain.rental.Rental;
 import com.aicarrental.domain.rental.RentalStatus;
 import com.aicarrental.domain.reservation.Reservation;
@@ -38,6 +41,7 @@ public class RentalService {
     private final VehicleRepository vehicleRepository;
     private final CurrentUserService currentUserService;
     private final AuditEventPublisher auditEventPublisher;
+    private final OutboxMessageService outboxMessageService;
 
     public RentalResponse startRental(StartRentalRequest request) {
 
@@ -193,7 +197,21 @@ public class RentalService {
         vehicleRepository.save(vehicle);
 
         Rental completedRental = rentalRepository.save(rental);
-
+        outboxMessageService.createOutboxMessage(
+                "rental-completed",
+                String.valueOf(completedRental.getId()),
+                OutboxEventType.RENTAL_COMPLETED,
+                new RentalCompletedEvent(
+                        completedRental.getId(),
+                        completedRental.getReservation() != null
+                                ? completedRental.getReservation().getId()
+                                : null,
+                        completedRental.getTenant() != null
+                                ? completedRental.getTenant().getId()
+                                : null,
+                        LocalDateTime.now()
+                )
+        );
         auditEventPublisher.publish(new AuditEvent(
                 currentUser.getId(),
                 currentUser.getEmail(),
