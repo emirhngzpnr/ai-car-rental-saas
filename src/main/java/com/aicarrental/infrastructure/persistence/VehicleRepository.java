@@ -116,4 +116,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
             @Param("blockingStatuses") List<ReservationStatus> blockingStatuses,
             @Param("availableStatus") VehicleStatus availableStatus
     );
+    Long countByTenant_IdAndStatusAndActiveTrue(Long tenantId, VehicleStatus status);
+
+    Long countByStatusAndActiveTrue(VehicleStatus status);
 }
