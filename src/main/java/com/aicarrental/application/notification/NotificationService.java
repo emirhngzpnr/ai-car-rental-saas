@@ -3,6 +3,7 @@ import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.event.PaymentCompletedEvent;
+import com.aicarrental.common.event.RefundCompletedEvent;
 import com.aicarrental.domain.notification.*;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.infrastructure.persistence.NotificationRepository;
@@ -71,5 +72,44 @@ public class NotificationService {
                 )
         );
 
+    }
+    public void createRefundCompletedNotification(
+            RefundCompletedEvent event
+    ) {
+        Tenant tenant = tenantRepository.findById(event.tenantId())
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Tenant not found")
+                );
+
+        Notification notification = Notification.builder()
+                .tenant(tenant)
+                .type(NotificationType.REFUND_COMPLETED)
+                .channel(NotificationChannel.EMAIL)
+                .status(NotificationStatus.PENDING)
+                .recipient("customer@example.com")
+                .subject("Refund Completed")
+                .message(
+                        "Your refund has been completed successfully. "
+                                + "Refund Amount: " + event.refundAmount()
+                                + " " + event.currency()
+                )
+                .build();
+
+        Notification savedNotification =
+                notificationRepository.save(notification);
+
+        auditEventPublisher.publish(
+                new AuditEvent(
+                        null,
+                        "SYSTEM",
+                        "SYSTEM",
+                        tenant.getId(),
+                        AuditAction.NOTIFICATION_CREATED,
+                        "Notification",
+                        savedNotification.getId(),
+                        "Refund notification created. Recipient: "
+                                + savedNotification.getRecipient()
+                )
+        );
     }
 }

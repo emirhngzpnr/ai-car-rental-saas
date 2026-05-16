@@ -4,6 +4,7 @@ import com.aicarrental.api.rental.request.CompleteRentalRequest;
 import com.aicarrental.api.rental.request.StartRentalRequest;
 import com.aicarrental.api.rental.response.RentalResponse;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.payment.RefundService;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
@@ -42,6 +43,7 @@ public class RentalService {
     private final CurrentUserService currentUserService;
     private final AuditEventPublisher auditEventPublisher;
     private final OutboxMessageService outboxMessageService;
+    private final RefundService refundService;
 
     public RentalResponse startRental(StartRentalRequest request) {
 
@@ -197,6 +199,7 @@ public class RentalService {
         vehicleRepository.save(vehicle);
 
         Rental completedRental = rentalRepository.save(rental);
+        refundService.createRefundForCompletedRental(completedRental);
         outboxMessageService.createOutboxMessage(
                 "rental-completed",
                 String.valueOf(completedRental.getId()),

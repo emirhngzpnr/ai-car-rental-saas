@@ -1,11 +1,13 @@
 package com.aicarrental.infrastructure.schedular;
 
 import com.aicarrental.common.event.PaymentCompletedEvent;
+import com.aicarrental.common.event.RefundCompletedEvent;
 import com.aicarrental.common.event.RentalCompletedEvent;
 import com.aicarrental.domain.outbox.OutboxEventType;
 import com.aicarrental.domain.outbox.OutboxMessage;
 import com.aicarrental.domain.outbox.OutboxMessageStatus;
 import com.aicarrental.infrastructure.kafka.PaymentEventProducer;
+import com.aicarrental.infrastructure.kafka.RefundEventProducer;
 import com.aicarrental.infrastructure.kafka.RentalEventProducer;
 import com.aicarrental.infrastructure.persistence.OutboxMessageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,6 +33,7 @@ public class OutboxPublisherScheduler {
     private final PaymentEventProducer paymentEventProducer;
     private final ObjectMapper objectMapper;
     private final RentalEventProducer rentalEventProducer;
+    private final RefundEventProducer refundEventProducer;
 
     @Scheduled(fixedRate = 10_000)
     @Transactional
@@ -98,6 +101,22 @@ public class OutboxPublisherScheduler {
 
             CompletableFuture<SendResult<String, Object>> future =
                     rentalEventProducer.publishRentalCompleted(
+                            event,
+                            message.getMessageKey()
+                    );
+
+            future.get(3, TimeUnit.SECONDS);
+            return;
+        }
+        if (message.getEventType() == OutboxEventType.REFUND_COMPLETED) {
+            RefundCompletedEvent event =
+                    objectMapper.readValue(
+                            message.getPayload(),
+                            RefundCompletedEvent.class
+                    );
+
+            CompletableFuture<SendResult<String, Object>> future =
+                    refundEventProducer.publishRefundCompleted(
                             event,
                             message.getMessageKey()
                     );

@@ -8,5 +8,8 @@ public enum OutboxEventType {
 
     RESERVATION_EXPIRED,
 
-    RENTAL_COMPLETED
+    RENTAL_COMPLETED,
+
+    REFUND_COMPLETED
+
 }
