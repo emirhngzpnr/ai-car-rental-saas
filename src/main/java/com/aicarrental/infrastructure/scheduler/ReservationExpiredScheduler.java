@@ -1,4 +1,4 @@
-package com.aicarrental.infrastructure.schedular;
+package com.aicarrental.infrastructure.scheduler;
 
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
