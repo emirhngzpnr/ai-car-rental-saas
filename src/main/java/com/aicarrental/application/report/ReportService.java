@@ -18,6 +18,7 @@ import com.aicarrental.infrastructure.persistence.VehicleRepository;
 import com.aicarrental.infrastructure.persistence.projection.MonthlyRevenueProjection;
 import com.aicarrental.infrastructure.persistence.projection.TopVehicleProjection;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -32,7 +33,10 @@ public class ReportService {
     private final InvoiceRepository invoiceRepository;
     private final VehicleRepository vehicleRepository;
     private final CurrentUserService currentUserService;
-
+    @Cacheable(
+            value = "dashboardSummary",
+            key = "@reportService.getReportCacheKeyPrefix()"
+    )
     public DashboardSummaryResponse getDashboardSummary() {
 
         User currentUser = currentUserService.getCurrentUser();
@@ -159,6 +163,10 @@ public class ReportService {
                 availableVehiclesCount
         );
     }
+    @Cacheable(
+            value = "monthlyRevenue",
+            key = "@reportService.getReportCacheKeyPrefix()"
+    )
     public List<MonthlyRevenueResponse> getMonthlyRevenue() {
         User currentUser = currentUserService.getCurrentUser();
 
@@ -178,6 +186,10 @@ public class ReportService {
                 ))
                 .toList();
     }
+    @Cacheable(
+            value = "monthlySummary",
+            key = "@reportService.getReportCacheKeyPrefix() + ':year:' + #year + ':month:' + #month"
+    )
     public MonthlySummaryResponse getMonthlySummary(
             Integer year,
             Integer month
@@ -305,6 +317,10 @@ public class ReportService {
                 issuedInvoices
         );
     }
+    @Cacheable(
+            value = "topVehicles",
+            key = "@reportService.getReportCacheKeyPrefix() + ':limit:' + #limit"
+    )
     public List<TopVehicleResponse> getTopVehicles(Integer limit) {
         int safeLimit = limit == null ? 5 : limit;
 
@@ -333,5 +349,14 @@ public class ReportService {
                         item.getTotalRevenue()
                 ))
                 .toList();
+    }
+    public String getReportCacheKeyPrefix() {
+        User currentUser = currentUserService.getCurrentUser();
+
+        if (currentUserService.isSuperAdmin(currentUser)) {
+            return "global";
+        }
+
+        return "tenant:" + currentUserService.getCurrentTenantId();
     }
 }
