@@ -12,6 +12,8 @@ import com.aicarrental.domain.tenant.*;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
 import com.aicarrental.infrastructure.persistence.TenantSettingRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -25,7 +27,10 @@ public class TenantSettingService {
     private final TenantRepository tenantRepository;
     private final CurrentUserService currentUserService;
     private final AuditEventPublisher auditEventPublisher;
-
+    @Cacheable(
+            value = "tenantSettings",
+            key = "'tenant:' + @currentUserService.getCurrentTenantId()"
+    )
     public List<TenantSettingResponse> getCurrentTenantSettings() {
         User currentUser = currentUserService.getCurrentUser();
 
@@ -60,6 +65,10 @@ public class TenantSettingService {
                                 .build()
                 ));
     }
+    @CacheEvict(
+            value = "tenantSettings",
+            key = "'tenant:' + @currentUserService.getCurrentTenantId()"
+    )
     public TenantSettingResponse updateCurrentTenantSetting(
             String settingKey,
              UpdateTenantSettingRequest request
