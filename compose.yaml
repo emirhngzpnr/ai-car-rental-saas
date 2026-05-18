@@ -52,5 +52,12 @@ services:
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+
+  redis:
+    image: redis:7.4
+    container_name: ai-car-rental-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
 volumes:
   ai_car_rental_pgdata:
