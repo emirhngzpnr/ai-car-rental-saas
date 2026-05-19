@@ -1,0 +1,224 @@
+package com.aicarrental.application.ai;
+import com.aicarrental.api.ai.response.AiPricingRecommendationResponse;
+import com.aicarrental.application.ai.context.AiPricingContext;
+import com.aicarrental.application.tenant.TenantSettingService;
+import com.aicarrental.common.exception.BusinessException;
+import com.aicarrental.common.exception.ResourceNotFoundException;
+import com.aicarrental.common.security.CurrentUserService;
+import com.aicarrental.domain.tenant.TenantSettingKey;
+import com.aicarrental.infrastructure.persistence.RentalRepository;
+import com.aicarrental.infrastructure.persistence.projection.AiPricingProjection;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.stereotype.Service;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class AiPricingService {
+    private final RentalRepository rentalRepository;
+    private final TenantSettingService tenantSettingService;
+    private final CurrentUserService currentUserService;
+    private final ChatClient.Builder chatClientBuilder;
+
+    public AiPricingRecommendationResponse recommendPrice(Long vehicleId) {
+
+        Long tenantId = currentUserService.getCurrentTenantId();
+
+        validateAiPricingEnabled();
+
+        AiPricingContext context = buildPricingContext(vehicleId, tenantId);
+
+        try {
+            return callAiModel(context);
+        } catch (Exception exception) {
+            log.error("AI pricing model call failed. Falling back to rule-based recommendation", exception);
+            return fallbackRecommendation(context);
+        }
+    }
+
+    private void validateAiPricingEnabled() {
+
+        boolean enabled =
+                tenantSettingService.getCurrentTenantSettings()
+                        .stream()
+                        .filter(setting ->
+                                setting.settingKey().equals(
+                                        TenantSettingKey.AI_PRICING_ENABLED.name()
+                                )
+                        )
+                        .findFirst()
+                        .map(setting ->
+                                Boolean.parseBoolean(setting.settingValue())
+                        )
+                        .orElse(false);
+
+        if (!enabled) {
+            throw new BusinessException("AI pricing is disabled for this tenant");
+        }
+    }
+    private AiPricingContext buildPricingContext(
+            Long vehicleId,
+            Long tenantId
+    ) {
+        AiPricingProjection projection =
+                rentalRepository.getAiPricingAnalytics(vehicleId, tenantId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Vehicle not found")
+                        );
+
+        return new AiPricingContext(
+                projection.getVehicleId(),
+                projection.getPlateNumber(),
+                projection.getBrand(),
+                projection.getModel(),
+                projection.getCurrentDailyPrice(),
+                projection.getCompletedRentalsCount(),
+                projection.getTotalRevenue(),
+                projection.getExtraKmRevenue(),
+                projection.getRefundAmount()
+        );
+    }
+
+    private AiPricingRecommendationResponse callAiModel(
+            AiPricingContext context
+    ) {
+        ChatClient chatClient = chatClientBuilder.build();
+
+        String prompt = """
+                You are an AI pricing analyst for a multi-tenant vehicle rental SaaS.
+
+                Analyze the vehicle performance data and recommend a daily rental price.
+
+                Rules:
+                - Return ONLY valid JSON.
+                - Do not include markdown.
+                - recommendedDailyPrice must be a positive number.
+                - confidenceLevel must be one of: LOW, MEDIUM, HIGH.
+                - Reason must be concise and business-oriented.
+                - Do not recommend more than 30 percent increase or more than 20 percent decrease from currentDailyPrice.
+
+                Vehicle data:
+                vehicleId: %d
+                plateNumber: %s
+                brand: %s
+                model: %s
+                currentDailyPrice: %s
+                completedRentalsCount: %d
+                totalRevenue: %s
+                extraKmRevenue: %s
+                refundAmount: %s
+
+                Expected JSON schema:
+                {
+                  "vehicleId": 1,
+                  "currentDailyPrice": 1500.00,
+                  "recommendedDailyPrice": 1650.00,
+                  "confidenceLevel": "MEDIUM",
+                  "reason": "Short business explanation"
+                }
+                """.formatted(
+                context.vehicleId(),
+                context.plateNumber(),
+                context.brand(),
+                context.model(),
+                context.currentDailyPrice(),
+                context.completedRentalsCount(),
+                context.totalRevenue(),
+                context.extraKmRevenue(),
+                context.refundAmount()
+        );
+
+        AiPricingRecommendationResponse response =
+                chatClient.prompt()
+                        .user(prompt)
+                        .call()
+                        .entity(AiPricingRecommendationResponse.class);
+
+        return validateAndNormalizeAiResponse(response, context);
+    }
+
+    private AiPricingRecommendationResponse validateAndNormalizeAiResponse(
+            AiPricingRecommendationResponse response,
+            AiPricingContext context
+    ) {
+        if (response == null) {
+            return fallbackRecommendation(context);
+        }
+
+        if (response.recommendedDailyPrice() == null ||
+                response.recommendedDailyPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            return fallbackRecommendation(context);
+        }
+
+        BigDecimal currentPrice = context.currentDailyPrice();
+
+        BigDecimal maxAllowed =
+                currentPrice.multiply(BigDecimal.valueOf(1.30));
+
+        BigDecimal minAllowed =
+                currentPrice.multiply(BigDecimal.valueOf(0.80));
+
+        BigDecimal recommended =
+                response.recommendedDailyPrice();
+
+        if (recommended.compareTo(maxAllowed) > 0) {
+            recommended = maxAllowed;
+        }
+
+        if (recommended.compareTo(minAllowed) < 0) {
+            recommended = minAllowed;
+        }
+
+        recommended = recommended.setScale(2, RoundingMode.HALF_UP);
+
+        return new AiPricingRecommendationResponse(
+                context.vehicleId(),
+                currentPrice,
+                recommended,
+                normalizeConfidence(response.confidenceLevel()),
+                response.reason() != null
+                        ? response.reason()
+                        : "AI generated a pricing recommendation based on rental performance."
+        );
+    }
+
+    private String normalizeConfidence(String confidenceLevel) {
+        if (confidenceLevel == null) {
+            return "LOW";
+        }
+
+        return switch (confidenceLevel.toUpperCase()) {
+            case "HIGH" -> "HIGH";
+            case "MEDIUM" -> "MEDIUM";
+            default -> "LOW";
+        };
+    }
+
+    private AiPricingRecommendationResponse fallbackRecommendation(
+            AiPricingContext context
+    ) {
+        BigDecimal currentPrice = context.currentDailyPrice();
+
+        BigDecimal recommended = currentPrice;
+
+        if (context.completedRentalsCount() != null &&
+                context.completedRentalsCount() >= 5) {
+            recommended = currentPrice.multiply(BigDecimal.valueOf(1.10));
+        }
+
+        recommended = recommended.setScale(2, RoundingMode.HALF_UP);
+
+        return new AiPricingRecommendationResponse(
+                context.vehicleId(),
+                currentPrice,
+                recommended,
+                "LOW",
+                "Fallback recommendation generated from historical rental count."
+        );
+    }
+}
