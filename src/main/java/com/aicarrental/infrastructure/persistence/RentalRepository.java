@@ -2,6 +2,7 @@ package com.aicarrental.infrastructure.persistence;
 
 import com.aicarrental.domain.rental.Rental;
 import com.aicarrental.domain.rental.RentalStatus;
+import com.aicarrental.infrastructure.persistence.projection.AiPricingProjection;
 import com.aicarrental.infrastructure.persistence.projection.TopVehicleProjection;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -156,5 +157,42 @@ public interface RentalRepository extends JpaRepository<Rental, Long>{
         """, nativeQuery = true)
     List<TopVehicleProjection> findTopVehicles(
             @Param("limit") int limit
+    );
+
+    @Query(value = """
+        SELECT
+            v.id AS vehicleId,
+            v.plate_number AS plateNumber,
+            v.brand AS brand,
+            v.model AS model,
+            v.daily_price AS currentDailyPrice,
+
+            COUNT(r.id) AS completedRentalsCount,
+
+            COALESCE(SUM(r.final_rental_price), 0) AS totalRevenue,
+
+            COALESCE(SUM(r.extra_km_fee), 0) AS extraKmRevenue,
+
+            COALESCE(SUM(r.refund_amount), 0) AS refundAmount
+
+        FROM rental.vehicles v
+
+        LEFT JOIN rental.rentals r
+            ON r.vehicle_id = v.id
+            AND r.status = 'COMPLETED'
+
+        WHERE v.id = :vehicleId
+          AND v.tenant_id = :tenantId
+
+        GROUP BY
+            v.id,
+            v.plate_number,
+            v.brand,
+            v.model,
+            v.daily_price
+        """, nativeQuery = true)
+    Optional<AiPricingProjection> getAiPricingAnalytics(
+            @Param("vehicleId") Long vehicleId,
+            @Param("tenantId") Long tenantId
     );
 }

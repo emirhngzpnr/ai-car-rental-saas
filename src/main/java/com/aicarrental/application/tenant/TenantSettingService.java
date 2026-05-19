@@ -119,9 +119,7 @@ public class TenantSettingService {
                         + ", New value: "
                         + savedSetting.getSettingValue()
         ));
-        return mapToResponse(
-                tenantSettingRepository.save(savedSetting)
-        );
+        return mapToResponse(savedSetting);
     }
     private void validateSettingValue(
             TenantSettingKey key,
