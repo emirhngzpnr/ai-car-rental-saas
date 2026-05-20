@@ -1,12 +1,22 @@
 package com.aicarrental.application.ai;
+import com.aicarrental.api.ai.response.AiPricingRecommendationManagementResponse;
 import com.aicarrental.api.ai.response.AiPricingRecommendationResponse;
 import com.aicarrental.application.ai.context.AiPricingContext;
 import com.aicarrental.application.tenant.TenantSettingService;
+import com.aicarrental.common.audit.AuditAction;
+import com.aicarrental.common.audit.AuditEvent;
+import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.common.security.CurrentUserService;
+import com.aicarrental.domain.ai.AiPricingRecommendation;
+import com.aicarrental.domain.ai.AiPricingRecommendationStatus;
+import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.tenant.TenantSettingKey;
+import com.aicarrental.domain.vehicle.Vehicle;
+import com.aicarrental.infrastructure.persistence.AiPricingRecommendationRepository;
 import com.aicarrental.infrastructure.persistence.RentalRepository;
+import com.aicarrental.infrastructure.persistence.VehicleRepository;
 import com.aicarrental.infrastructure.persistence.projection.AiPricingProjection;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +25,8 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -24,7 +36,9 @@ public class AiPricingService {
     private final TenantSettingService tenantSettingService;
     private final CurrentUserService currentUserService;
     private final ChatClient.Builder chatClientBuilder;
-
+    private final AiPricingRecommendationRepository aiPricingRecommendationRepository;
+    private final VehicleRepository vehicleRepository;
+    private final AuditEventPublisher auditEventPublisher;
     public AiPricingRecommendationResponse recommendPrice(Long vehicleId) {
 
         Long tenantId = currentUserService.getCurrentTenantId();
@@ -33,14 +47,29 @@ public class AiPricingService {
 
         AiPricingContext context = buildPricingContext(vehicleId, tenantId);
 
-        try {
-            return callAiModel(context);
-        } catch (Exception exception) {
-            log.error("AI pricing model call failed. Falling back to rule-based recommendation", exception);
-            return fallbackRecommendation(context);
-        }
-    }
+        AiPricingRecommendationResponse recommendation;
 
+        try {
+            recommendation = callAiModel(context);
+
+        } catch (Exception exception) {
+
+            log.error(
+                    "AI pricing model call failed. Falling back to rule-based recommendation",
+                    exception
+            );
+
+            recommendation = fallbackRecommendation(context);
+        }
+
+        saveRecommendation(
+                tenantId,
+                vehicleId,
+                recommendation
+        );
+
+        return recommendation;
+    }
     private void validateAiPricingEnabled() {
 
         boolean enabled =
@@ -219,6 +248,179 @@ public class AiPricingService {
                 recommended,
                 "LOW",
                 "Fallback recommendation generated from historical rental count."
+        );
+    }
+    private void saveRecommendation(
+            Long tenantId,
+            Long vehicleId,
+            AiPricingRecommendationResponse response
+    ) {
+        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Vehicle not found")
+                );
+
+        AiPricingRecommendation recommendation =
+                AiPricingRecommendation.builder()
+                        .tenant(vehicle.getTenant())
+                        .vehicle(vehicle)
+                        .currentPrice(response.currentDailyPrice())
+                        .recommendedPrice(response.recommendedDailyPrice())
+                        .confidenceLevel(response.confidenceLevel())
+                        .reason(response.reason())
+                        .status(AiPricingRecommendationStatus.PENDING)
+                        .build();
+
+        aiPricingRecommendationRepository.save(recommendation);
+    }
+    public List<AiPricingRecommendationManagementResponse> getPendingRecommendations() {
+
+        User currentUser = currentUserService.getCurrentUser();
+
+        List<AiPricingRecommendation> recommendations;
+
+        if (currentUserService.isSuperAdmin(currentUser)) {
+            recommendations =
+                    aiPricingRecommendationRepository
+                            .findByStatusOrderByCreatedAtDesc(
+                                    AiPricingRecommendationStatus.PENDING
+                            );
+        } else {
+            Long tenantId = currentUserService.getCurrentTenantId();
+
+            recommendations =
+                    aiPricingRecommendationRepository
+                            .findByTenant_IdAndStatusOrderByCreatedAtDesc(
+                                    tenantId,
+                                    AiPricingRecommendationStatus.PENDING
+                            );
+        }
+
+        return recommendations.stream()
+                .map(this::mapToManagementResponse)
+                .toList();
+    }
+    public AiPricingRecommendationManagementResponse approveRecommendation(
+            Long recommendationId
+    ) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        AiPricingRecommendation recommendation =
+                aiPricingRecommendationRepository.findById(recommendationId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("AI pricing recommendation not found")
+                        );
+
+        if (recommendation.getStatus() != AiPricingRecommendationStatus.PENDING) {
+            throw new BusinessException("Only pending recommendations can be approved");
+        }
+
+        if (!currentUserService.isSuperAdmin(currentUser)
+                && !recommendation.getTenant().getId().equals(currentUserService.getCurrentTenantId())) {
+            throw new BusinessException("You cannot approve this recommendation");
+        }
+
+        Vehicle vehicle = recommendation.getVehicle();
+
+        vehicle.setDailyPrice(recommendation.getRecommendedPrice());
+        vehicle.setUpdatedAt(LocalDateTime.now());
+
+        vehicleRepository.save(vehicle);
+
+        recommendation.setStatus(AiPricingRecommendationStatus.APPROVED);
+        recommendation.setApprovedBy(currentUser);
+        recommendation.setApprovedAt(LocalDateTime.now());
+        BigDecimal oldPrice = vehicle.getDailyPrice();
+        AiPricingRecommendation saved =
+                aiPricingRecommendationRepository.save(recommendation);
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                recommendation.getTenant().getId(),
+                AuditAction.AI_PRICING_RECOMMENDATION_APPROVED,
+                "AiPricingRecommendation",
+                saved.getId(),
+                "AI pricing recommendation approved. VehicleId: "
+                        + vehicle.getId()
+                        + ", Old price: "
+                        + oldPrice
+                        + ", New price: "
+                        + vehicle.getDailyPrice()
+        ));
+        return mapToManagementResponse(saved);
+    }
+    public AiPricingRecommendationManagementResponse rejectRecommendation(
+            Long recommendationId
+    ) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        AiPricingRecommendation recommendation =
+                aiPricingRecommendationRepository.findById(recommendationId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("AI pricing recommendation not found")
+                        );
+
+        if (recommendation.getStatus() != AiPricingRecommendationStatus.PENDING) {
+            throw new BusinessException("Only pending recommendations can be rejected");
+        }
+
+        if (!currentUserService.isSuperAdmin(currentUser)
+                && !recommendation.getTenant().getId().equals(currentUserService.getCurrentTenantId())) {
+            throw new BusinessException("You cannot reject this recommendation");
+        }
+
+        recommendation.setStatus(AiPricingRecommendationStatus.REJECTED);
+        recommendation.setRejectedBy(currentUser);
+        recommendation.setRejectedAt(LocalDateTime.now());
+
+        AiPricingRecommendation saved =
+                aiPricingRecommendationRepository.save(recommendation);
+
+        auditEventPublisher.publish(new AuditEvent(
+                currentUser.getId(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                recommendation.getTenant().getId(),
+                AuditAction.AI_PRICING_RECOMMENDATION_REJECTED,
+                "AiPricingRecommendation",
+                saved.getId(),
+                "AI pricing recommendation rejected. VehicleId: "
+                        + recommendation.getVehicle().getId()
+                        + ", Current price: "
+                        + recommendation.getCurrentPrice()
+                        + ", Recommended price: "
+                        + recommendation.getRecommendedPrice()
+        ));
+
+        return mapToManagementResponse(saved);
+    }
+    private AiPricingRecommendationManagementResponse mapToManagementResponse(
+            AiPricingRecommendation recommendation
+    ) {
+        Vehicle vehicle = recommendation.getVehicle();
+
+        return new AiPricingRecommendationManagementResponse(
+                recommendation.getId(),
+                recommendation.getTenant().getId(),
+                vehicle.getId(),
+                vehicle.getPlateNumber(),
+                vehicle.getBrand(),
+                vehicle.getModel(),
+                recommendation.getCurrentPrice(),
+                recommendation.getRecommendedPrice(),
+                recommendation.getConfidenceLevel(),
+                recommendation.getReason(),
+                recommendation.getStatus(),
+                recommendation.getApprovedBy() != null
+                        ? recommendation.getApprovedBy().getId()
+                        : null,
+                recommendation.getRejectedBy() != null
+                        ? recommendation.getRejectedBy().getId()
+                        : null,
+                recommendation.getApprovedAt(),
+                recommendation.getRejectedAt(),
+                recommendation.getCreatedAt()
         );
     }
 }
