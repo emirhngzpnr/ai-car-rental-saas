@@ -2,6 +2,7 @@ package com.aicarrental.application.ai;
 import com.aicarrental.api.ai.response.AiPricingRecommendationManagementResponse;
 import com.aicarrental.api.ai.response.AiPricingRecommendationResponse;
 import com.aicarrental.application.ai.context.AiPricingContext;
+import com.aicarrental.application.ai.specification.AiPricingRecommendationSpecification;
 import com.aicarrental.application.tenant.TenantSettingService;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
@@ -21,6 +22,9 @@ import com.aicarrental.infrastructure.persistence.projection.AiPricingProjection
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -394,6 +398,31 @@ public class AiPricingService {
         ));
 
         return mapToManagementResponse(saved);
+    }
+    public Page<AiPricingRecommendationManagementResponse> getRecommendations(
+            AiPricingRecommendationStatus status,
+            Long vehicleId,
+            LocalDateTime createdAfter,
+            LocalDateTime createdBefore,
+            Pageable pageable
+    ) {
+        User currentUser = currentUserService.getCurrentUser();
+
+        Long tenantId = currentUserService.isSuperAdmin(currentUser)
+                ? null
+                : currentUserService.getCurrentTenantId();
+
+        Specification<AiPricingRecommendation> specification =
+                Specification
+                        .where(AiPricingRecommendationSpecification.hasTenantId(tenantId))
+                        .and(AiPricingRecommendationSpecification.hasStatus(status))
+                        .and(AiPricingRecommendationSpecification.hasVehicleId(vehicleId))
+                        .and(AiPricingRecommendationSpecification.createdAfter(createdAfter))
+                        .and(AiPricingRecommendationSpecification.createdBefore(createdBefore));
+
+        return aiPricingRecommendationRepository
+                .findAll(specification, pageable)
+                .map(this::mapToManagementResponse);
     }
     private AiPricingRecommendationManagementResponse mapToManagementResponse(
             AiPricingRecommendation recommendation
