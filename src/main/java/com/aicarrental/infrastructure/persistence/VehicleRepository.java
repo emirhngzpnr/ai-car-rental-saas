@@ -3,7 +3,9 @@ package com.aicarrental.infrastructure.persistence;
 import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.vehicle.Vehicle;
 import com.aicarrental.domain.vehicle.VehicleStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -119,4 +121,39 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     Long countByTenant_IdAndStatusAndActiveTrue(Long tenantId, VehicleStatus status);
 
     Long countByStatusAndActiveTrue(VehicleStatus status);
+    @Query("""
+        SELECT v
+        FROM Vehicle v
+        WHERE v.tenant.id = :tenantId
+          AND v.active = true
+          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Reservation r
+              WHERE r.vehicle.id = v.id
+                AND r.status IN (
+                    com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
+                    com.aicarrental.domain.reservation.ReservationStatus.CONFIRMED
+                )
+                AND r.pickupDateTime < :returnDateTime
+                AND r.returnDateTime > :pickupDateTime
+          )
+        """)
+    List<Vehicle> findAvailableVehicles(
+            @Param("tenantId") Long tenantId,
+            @Param("pickupDateTime") LocalDateTime pickupDateTime,
+            @Param("returnDateTime") LocalDateTime returnDateTime
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT v
+        FROM Vehicle v
+        WHERE v.id = :vehicleId
+          AND v.tenant.id = :tenantId
+        """)
+    Optional<Vehicle> findByIdAndTenantIdForUpdate(
+            @Param("vehicleId") Long vehicleId,
+            @Param("tenantId") Long tenantId
+    );
 }

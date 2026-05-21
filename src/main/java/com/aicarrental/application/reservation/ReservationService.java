@@ -47,8 +47,18 @@ public class ReservationService {
 
         User currentUser = currentUserService.getCurrentUser();
 
-        Vehicle vehicle = findVehicleByIdWithTenantIsolation(request.vehicleId());
+        Long tenantId = currentUserService.isSuperAdmin(currentUser)
+                ? currentUser.getTenant().getId()
+                : currentUserService.getCurrentTenantId();
 
+        Vehicle vehicle = vehicleRepository
+                .findByIdAndTenantIdForUpdate(
+                        request.vehicleId(),
+                        tenantId
+                )
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Vehicle not found")
+                );
         if (vehicle.getStatus() != VehicleStatus.AVAILABLE) {
             throw new BusinessException("Vehicle is not available");
         }
@@ -58,16 +68,11 @@ public class ReservationService {
         }
 
         boolean hasConflict =
-                reservationRepository
-                        .existsByVehicle_IdAndActiveTrueAndStatusInAndPickupDateTimeLessThanAndReturnDateTimeGreaterThan(
-                                vehicle.getId(),
-                                List.of(
-                                        ReservationStatus.PENDING_PAYMENT,
-                                        ReservationStatus.CONFIRMED
-                                ),
-                                request.returnDateTime(),
-                                request.pickupDateTime()
-                        );
+                reservationRepository.existsOverlappingReservation(
+                        vehicle.getId(),
+                        request.pickupDateTime(),
+                        request.returnDateTime()
+                );
 
         if (hasConflict) {
             throw new BusinessException("Vehicle is already reserved for selected dates");
