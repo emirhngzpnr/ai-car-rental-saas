@@ -5,19 +5,25 @@ import com.aicarrental.api.reservation.response.ReservationResponse;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
+import com.aicarrental.common.event.ReservationCreatedEvent;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.auth.Role;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.domain.insurance.InsurancePackage;
+import com.aicarrental.domain.outbox.OutboxEventType;
+import com.aicarrental.domain.outbox.OutboxMessage;
+import com.aicarrental.domain.outbox.OutboxMessageStatus;
 import com.aicarrental.domain.reservation.Reservation;
 import com.aicarrental.domain.reservation.ReservationStatus;
 import com.aicarrental.domain.vehicle.Vehicle;
 import com.aicarrental.domain.vehicle.VehicleStatus;
 import com.aicarrental.infrastructure.persistence.InsurancePackageRepository;
+import com.aicarrental.infrastructure.persistence.OutboxMessageRepository;
 import com.aicarrental.infrastructure.persistence.ReservationRepository;
 import com.aicarrental.infrastructure.persistence.VehicleRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -38,6 +44,8 @@ public class ReservationService {
     private final InsurancePackageRepository insurancePackageRepository;
     private final AuditEventPublisher auditEventPublisher;
     private final CurrentUserService currentUserService;
+    private final ObjectMapper objectMapper;
+    private final OutboxMessageRepository outboxMessageRepository;
 
     private boolean isSuperAdmin(User user) {
         return user.getRole() == Role.SUPER_ADMIN;
@@ -63,8 +71,15 @@ public class ReservationService {
             throw new BusinessException("Vehicle is not available");
         }
 
-        if (request.returnDateTime().isBefore(request.pickupDateTime())) {
-            throw new BusinessException("Return date cannot be before pickup date");
+        if (!request.returnDateTime().isAfter(request.pickupDateTime())) {
+            throw new BusinessException(
+                    "Return date must be after pickup date"
+            );
+        }
+        if (request.pickupDateTime().isBefore(LocalDateTime.now())) {
+            throw new BusinessException(
+                    "Pickup date cannot be in the past"
+            );
         }
 
         boolean hasConflict =
@@ -161,6 +176,22 @@ public class ReservationService {
 
         Reservation savedReservation =
                 reservationRepository.save(reservation);
+        ReservationCreatedEvent event = new ReservationCreatedEvent(
+                savedReservation.getId(),
+                savedReservation.getTenant().getId(),
+                savedReservation.getVehicle().getId(),
+                savedReservation.getCustomerFullName(),
+                savedReservation.getCustomerEmail(),
+                savedReservation.getVehicle().getPlateNumber(),
+                savedReservation.getVehicle().getBrand(),
+                savedReservation.getVehicle().getModel(),
+                savedReservation.getPickupDateTime(),
+                savedReservation.getReturnDateTime(),
+                savedReservation.getTotalEstimatedPrice(),
+                LocalDateTime.now()
+        );
+
+
 
         auditEventPublisher.publish(new AuditEvent(
                 currentUser.getId(),
@@ -172,6 +203,21 @@ public class ReservationService {
                 savedReservation.getId(),
                 "Reservation created for vehicle: " + vehicle.getPlateNumber()
         ));
+        try {
+            outboxMessageRepository.save(
+                    OutboxMessage.builder()
+                            .eventType(OutboxEventType.RESERVATION_CREATED)
+                            .topic("reservation-created")
+                            .messageKey(savedReservation.getId().toString())
+                            .payload(objectMapper.writeValueAsString(event))
+                            .status(OutboxMessageStatus.PENDING)
+                            .retryCount(0)
+                            .build()
+            );
+        }
+        catch (Exception exception) {
+            throw new BusinessException("Failed to create reservation event");
+        }
 
         return mapToResponse(savedReservation);
     }

@@ -7,18 +7,24 @@ import com.aicarrental.application.tenant.TenantSettingService;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
+import com.aicarrental.common.event.AiPricingApprovedEvent;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.ai.AiPricingRecommendation;
 import com.aicarrental.domain.ai.AiPricingRecommendationStatus;
 import com.aicarrental.domain.auth.User;
+import com.aicarrental.domain.outbox.OutboxEventType;
+import com.aicarrental.domain.outbox.OutboxMessage;
+import com.aicarrental.domain.outbox.OutboxMessageStatus;
 import com.aicarrental.domain.tenant.TenantSettingKey;
 import com.aicarrental.domain.vehicle.Vehicle;
 import com.aicarrental.infrastructure.persistence.AiPricingRecommendationRepository;
+import com.aicarrental.infrastructure.persistence.OutboxMessageRepository;
 import com.aicarrental.infrastructure.persistence.RentalRepository;
 import com.aicarrental.infrastructure.persistence.VehicleRepository;
 import com.aicarrental.infrastructure.persistence.projection.AiPricingProjection;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -43,6 +49,9 @@ public class AiPricingService {
     private final AiPricingRecommendationRepository aiPricingRecommendationRepository;
     private final VehicleRepository vehicleRepository;
     private final AuditEventPublisher auditEventPublisher;
+    private final OutboxMessageRepository outboxMessageRepository;
+    private final ObjectMapper objectMapper;
+
     public AiPricingRecommendationResponse recommendPrice(Long vehicleId) {
 
         Long tenantId = currentUserService.getCurrentTenantId();
@@ -352,6 +361,34 @@ public class AiPricingService {
                         + ", New price: "
                         + vehicle.getDailyPrice()
         ));
+        AiPricingApprovedEvent event = new AiPricingApprovedEvent(
+                saved.getId(),
+                recommendation.getTenant().getId(),
+                vehicle.getId(),
+                vehicle.getPlateNumber(),
+                vehicle.getBrand(),
+                vehicle.getModel(),
+                oldPrice,
+                vehicle.getDailyPrice(),
+                currentUser.getId(),
+                currentUser.getEmail(),
+                LocalDateTime.now()
+        );
+
+        try {
+            outboxMessageRepository.save(
+                    OutboxMessage.builder()
+                            .eventType(OutboxEventType.AI_PRICING_APPROVED)
+                            .topic("ai-pricing-approved")
+                            .messageKey(saved.getId().toString())
+                            .payload(objectMapper.writeValueAsString(event))
+                            .status(OutboxMessageStatus.PENDING)
+                            .retryCount(0)
+                            .build()
+            );
+        } catch (Exception exception) {
+            throw new BusinessException("Failed to create AI pricing approved event");
+        }
         return mapToManagementResponse(saved);
     }
     public AiPricingRecommendationManagementResponse rejectRecommendation(

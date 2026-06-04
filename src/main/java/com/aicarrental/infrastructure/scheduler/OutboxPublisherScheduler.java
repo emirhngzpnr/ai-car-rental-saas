@@ -1,14 +1,10 @@
 package com.aicarrental.infrastructure.scheduler;
 
-import com.aicarrental.common.event.PaymentCompletedEvent;
-import com.aicarrental.common.event.RefundCompletedEvent;
-import com.aicarrental.common.event.RentalCompletedEvent;
+import com.aicarrental.common.event.*;
 import com.aicarrental.domain.outbox.OutboxEventType;
 import com.aicarrental.domain.outbox.OutboxMessage;
 import com.aicarrental.domain.outbox.OutboxMessageStatus;
-import com.aicarrental.infrastructure.kafka.PaymentEventProducer;
-import com.aicarrental.infrastructure.kafka.RefundEventProducer;
-import com.aicarrental.infrastructure.kafka.RentalEventProducer;
+import com.aicarrental.infrastructure.kafka.*;
 import com.aicarrental.infrastructure.persistence.OutboxMessageRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -34,6 +30,8 @@ public class OutboxPublisherScheduler {
     private final ObjectMapper objectMapper;
     private final RentalEventProducer rentalEventProducer;
     private final RefundEventProducer refundEventProducer;
+    private final ReservationEventProducer reservationEventProducer;
+    private final AiPricingEventProducer aiPricingEventProducer;
 
     @Scheduled(fixedRate = 10_000)
     @Transactional
@@ -117,6 +115,56 @@ public class OutboxPublisherScheduler {
 
             CompletableFuture<SendResult<String, Object>> future =
                     refundEventProducer.publishRefundCompleted(
+                            event,
+                            message.getMessageKey()
+                    );
+
+            future.get(3, TimeUnit.SECONDS);
+            return;
+        }
+        if (message.getEventType() == OutboxEventType.RESERVATION_CREATED) {
+            ReservationCreatedEvent event =
+                    objectMapper.readValue(
+                            message.getPayload(),
+                            ReservationCreatedEvent.class
+                    );
+
+            CompletableFuture<SendResult<String, Object>> future =
+                    reservationEventProducer.publishReservationCreated(
+                            event,
+                            message.getMessageKey()
+                    );
+
+            future.get(3, TimeUnit.SECONDS);
+            return;
+        }
+
+        if (message.getEventType() == OutboxEventType.RESERVATION_EXPIRED) {
+            ReservationExpiredEvent event =
+                    objectMapper.readValue(
+                            message.getPayload(),
+                            ReservationExpiredEvent.class
+                    );
+
+            CompletableFuture<SendResult<String, Object>> future =
+                    reservationEventProducer.publishReservationExpired(
+                            event,
+                            message.getMessageKey()
+                    );
+
+            future.get(3, TimeUnit.SECONDS);
+            return;
+        }
+
+        if (message.getEventType() == OutboxEventType.AI_PRICING_APPROVED) {
+            AiPricingApprovedEvent event =
+                    objectMapper.readValue(
+                            message.getPayload(),
+                            AiPricingApprovedEvent.class
+                    );
+
+            CompletableFuture<SendResult<String, Object>> future =
+                    aiPricingEventProducer.publishAiPricingApproved(
                             event,
                             message.getMessageKey()
                     );
