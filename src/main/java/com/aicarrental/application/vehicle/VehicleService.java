@@ -64,7 +64,6 @@ public class VehicleService {
                 .build();
 
         Vehicle savedVehicle = vehicleRepository.save(vehicle);
-        System.out.println("VEHICLE AUDIT PUBLISHING: " + savedVehicle.getId());
         auditEventPublisher.publish(new AuditEvent(
                 currentUser.getId(),
                 currentUser.getEmail(),

@@ -98,6 +98,7 @@ public class UserService {
     public UserResponse updateUser(Long id, UpdateUserRequest request) {
         User currentUser = currentUserService.getCurrentUser();
         User user = findUserByIdWithTenantIsolation(id);
+        validateUserUpdatePermission(currentUser, user);
 
         if (request.email() != null && userRepository.existsByEmailAndIdNot(request.email(), id)) {
             throw new BusinessException("Email already exists");
@@ -120,6 +121,12 @@ public class UserService {
         }
 
         if (request.role() != null) {
+            validateUserRoleUpdatePermission(
+                    currentUser,
+                    user,
+                    request.role()
+            );
+
             user.setRole(request.role());
         }
 
@@ -227,5 +234,58 @@ public class UserService {
         }
 
         return currentUserService.getCurrentTenant();
+    }
+    private void validateUserUpdatePermission(
+            User currentUser,
+            User targetUser
+    ) {
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            if (targetUser.getRole() == Role.SUPER_ADMIN) {
+                throw new BusinessException("SUPER_ADMIN user cannot be updated from this endpoint");
+            }
+
+            return;
+        }
+
+        if (currentUser.getRole() == Role.TENANT_ADMIN) {
+            if (targetUser.getRole() != Role.TENANT_STAFF) {
+                throw new BusinessException("Tenant admin can only update tenant staff users");
+            }
+
+            return;
+        }
+
+        throw new BusinessException("You are not allowed to update users");
+    }
+    private void validateUserRoleUpdatePermission(
+            User currentUser,
+            User targetUser,
+            Role requestedRole
+    ) {
+        if (requestedRole == Role.SUPER_ADMIN) {
+            throw new BusinessException("SUPER_ADMIN role cannot be assigned");
+        }
+
+        if (currentUser.getRole() == Role.SUPER_ADMIN) {
+            if (targetUser.getRole() == Role.SUPER_ADMIN) {
+                throw new BusinessException("SUPER_ADMIN user cannot be updated from this endpoint");
+            }
+
+            return;
+        }
+
+        if (currentUser.getRole() == Role.TENANT_ADMIN) {
+            if (targetUser.getRole() != Role.TENANT_STAFF) {
+                throw new BusinessException("Tenant admin can only update tenant staff users");
+            }
+
+            if (requestedRole != Role.TENANT_STAFF) {
+                throw new BusinessException("Tenant admin cannot change user role");
+            }
+
+            return;
+        }
+
+        throw new BusinessException("You are not allowed to update user roles");
     }
 }

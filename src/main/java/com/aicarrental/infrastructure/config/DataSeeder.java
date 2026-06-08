@@ -25,10 +25,7 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
 
-        System.out.println("DataSeeder çalıştı...");
-
         if (tenantRepository.count() == 0) {
-            System.out.println("Seed tenant data yükleniyor...");
 
             Tenant fastcar = Tenant.builder()
                     .companyName("FastCar Rental")
@@ -102,11 +99,8 @@ public class DataSeeder implements CommandLineRunner {
 
             userRepository.save(superAdmin);
 
-            System.out.println("SUPER_ADMIN oluşturuldu: superadmin@aicarrental.com");
-        } else {
-            System.out.println("SUPER_ADMIN zaten mevcut.");
+
         }
 
-        System.out.println("DataSeeder tamamlandı.");
     }
 }
