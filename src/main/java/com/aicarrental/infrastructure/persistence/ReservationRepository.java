@@ -50,9 +50,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         FROM Reservation r
         WHERE r.vehicle.id = :vehicleId
           AND r.status IN (
-              com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
-              com.aicarrental.domain.reservation.ReservationStatus.CONFIRMED
-          )
+                         com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
+                         com.aicarrental.domain.reservation.ReservationStatus.DEPOSIT_PAID,
+                         com.aicarrental.domain.reservation.ReservationStatus.CONFIRMED
+                     )
           AND r.pickupDateTime < :returnDateTime
           AND r.returnDateTime > :pickupDateTime
         """)
