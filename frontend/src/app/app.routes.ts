@@ -5,6 +5,7 @@ import { roleGuard } from './core/auth/role.guard';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { VehiclesComponent } from './features/vehicles/vehicles.component';
 import { PlaceholderPageComponent } from './features/placeholder-page/placeholder-page.component';
 
 export const routes: Routes = [
@@ -19,11 +20,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       { path: 'dashboard', component: DashboardComponent },
-      {
-        path: 'vehicles',
-        component: PlaceholderPageComponent,
-        data: { title: 'Vehicles', description: 'Fleet inventory, availability and lifecycle controls will be connected in the next phase.' }
-      },
+      { path: 'vehicles', component: VehiclesComponent },
       {
         path: 'reservations',
         component: PlaceholderPageComponent,

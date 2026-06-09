@@ -1,0 +1,73 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit vehicle' : 'New vehicle' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="vehicle-form">
+    <div class="form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Brand</mat-label>
+        <input matInput formControlName="brand">
+        @if (form.controls.brand.hasError('required')) { <mat-error>Brand is required</mat-error> }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Model</mat-label>
+        <input matInput formControlName="model">
+        @if (form.controls.model.hasError('required')) { <mat-error>Model is required</mat-error> }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Plate number</mat-label>
+        <input matInput formControlName="plateNumber">
+        @if (form.controls.plateNumber.hasError('required')) { <mat-error>Plate number is required</mat-error> }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="status">
+          @for (status of statuses; track status) {
+            <mat-option [value]="status">{{ status }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Production year</mat-label>
+        <input matInput type="number" formControlName="productionYear">
+        @if (form.controls.productionYear.hasError('min')) { <mat-error>Production year must be 2000 or newer</mat-error> }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Current mileage</mat-label>
+        <input matInput type="number" formControlName="currentMileage">
+        @if (form.controls.currentMileage.hasError('min')) { <mat-error>Mileage cannot be negative</mat-error> }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Daily price</mat-label>
+        <input matInput type="number" formControlName="dailyPrice">
+        @if (form.controls.dailyPrice.hasError('min')) { <mat-error>Daily price must be greater than zero</mat-error> }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Daily km limit</mat-label>
+        <input matInput type="number" formControlName="dailyKmLimit">
+        @if (form.controls.dailyKmLimit.hasError('min')) { <mat-error>Daily km limit must be at least 1</mat-error> }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Extra km price</mat-label>
+        <input matInput type="number" formControlName="extraKmPricePerKm">
+        @if (form.controls.extraKmPricePerKm.hasError('min')) { <mat-error>Extra km price must be greater than zero</mat-error> }
+      </mat-form-field>
+    </div>
+
+    @if (isEdit) {
+      <mat-checkbox formControlName="active">Active vehicle record</mat-checkbox>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancel</button>
+  <button mat-flat-button color="primary" type="button" (click)="save()">{{ isEdit ? 'Save changes' : 'Create vehicle' }}</button>
+</mat-dialog-actions>

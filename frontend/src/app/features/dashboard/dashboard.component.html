@@ -3,42 +3,73 @@
     title="Dashboard"
     description="Operational overview for fleet availability, rental activity, payments and tenant workload."
   >
-    <button mat-stroked-button type="button">
+    <button mat-stroked-button type="button" (click)="loadSummary()" [disabled]="loading()">
       <mat-icon>refresh</mat-icon>
       Refresh
     </button>
   </acr-page-header>
 
-  <section class="dashboard-grid" aria-label="Dashboard sections">
-    <article class="acr-panel summary-panel">
-      <div class="panel-heading">
-        <h2>Operational summary</h2>
-        <span>Live API integration is scheduled for phase 2.</span>
-      </div>
+  @if (loading()) {
+    <section class="acr-panel state-panel">
+      <acr-loading-state label="Loading dashboard summary" />
+    </section>
+  } @else if (error()) {
+    <acr-error-state [message]="error()" />
+  } @else {
+    @if (summary(); as data) {
+      <section class="metric-grid" aria-label="Dashboard metrics">
+        <article class="acr-panel metric-card">
+          <span>Available vehicles</span>
+          <strong>{{ data.availableVehiclesCount }}</strong>
+          <small>Ready for booking</small>
+        </article>
+        <article class="acr-panel metric-card">
+          <span>Active rentals</span>
+          <strong>{{ data.activeRentalsCount }}</strong>
+          <small>Currently on the road</small>
+        </article>
+        <article class="acr-panel metric-card">
+          <span>Completed rentals</span>
+          <strong>{{ data.completedRentalsCount }}</strong>
+          <small>Closed rental records</small>
+        </article>
+        <article class="acr-panel metric-card">
+          <span>Pending payments</span>
+          <strong>{{ data.pendingPaymentsCount }}</strong>
+          <small>Require review</small>
+        </article>
+      </section>
+
+      <section class="dashboard-grid" aria-label="Financial dashboard sections">
+        <article class="acr-panel summary-panel">
+          <div class="panel-heading">
+            <h2>Financial position</h2>
+            <span>Issued invoices, completed rental revenue and refund exposure.</span>
+          </div>
+          <div class="finance-list">
+            <div><span>Total revenue</span><strong>{{ money(data.totalRevenue) }}</strong></div>
+            <div><span>Invoice amount</span><strong>{{ money(data.totalInvoiceAmount) }}</strong></div>
+            <div><span>Extra km revenue</span><strong>{{ money(data.totalExtraKmRevenue) }}</strong></div>
+            <div><span>Refund amount</span><strong>{{ money(data.totalRefundAmount) }}</strong></div>
+          </div>
+        </article>
+
+        <article class="acr-panel side-panel">
+          <div class="panel-heading">
+            <h2>Work queue</h2>
+            <span>Operational areas that are ready for deeper workflow screens.</span>
+          </div>
+          <div class="queue-row"><mat-icon>event_available</mat-icon><span>Reservation workflow</span></div>
+          <div class="queue-row"><mat-icon>assignment_turned_in</mat-icon><span>Rental handover</span></div>
+          <div class="queue-row"><mat-icon>payments</mat-icon><span>Payment review</span></div>
+        </article>
+      </section>
+    } @else {
       <acr-empty-state
         icon="monitoring"
-        title="Dashboard metrics are not connected yet"
-        message="This page is ready for live backend data from the reports API. No mock figures are shown in this foundation phase."
+        title="No dashboard summary available"
+        message="The reports API returned no summary for the current account."
       />
-    </article>
-
-    <article class="acr-panel side-panel">
-      <div class="panel-heading">
-        <h2>Work queue</h2>
-        <span>Reservations, rentals and payment actions will appear here after API integration.</span>
-      </div>
-      <div class="queue-row">
-        <mat-icon>event_available</mat-icon>
-        <span>Reservation workflow</span>
-      </div>
-      <div class="queue-row">
-        <mat-icon>assignment_turned_in</mat-icon>
-        <span>Rental handover</span>
-      </div>
-      <div class="queue-row">
-        <mat-icon>payments</mat-icon>
-        <span>Payment review</span>
-      </div>
-    </article>
-  </section>
+    }
+  }
 </section>

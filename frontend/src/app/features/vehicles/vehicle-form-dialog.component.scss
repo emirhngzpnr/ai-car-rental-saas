@@ -1,0 +1,24 @@
+.vehicle-form {
+  min-width: min(720px, 78vw);
+}
+
+.form-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 6px;
+}
+
+mat-checkbox {
+  margin-top: 4px;
+}
+
+@media (max-width: 720px) {
+  .vehicle-form {
+    min-width: 0;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
