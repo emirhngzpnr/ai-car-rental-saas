@@ -1,0 +1,17 @@
+.rental-form {
+  display: grid;
+  gap: 12px;
+  min-width: min(560px, 76vw);
+  padding-top: 6px;
+}
+.context-line {
+  background: var(--acr-surface-muted);
+  border: 1px solid var(--acr-border-soft);
+  border-radius: 6px;
+  color: var(--acr-text-muted);
+  font-size: 13px;
+  padding: 10px 12px;
+}
+@media (max-width: 640px) {
+  .rental-form { min-width: 0; }
+}
