@@ -8,6 +8,7 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { VehiclesComponent } from './features/vehicles/vehicles.component';
 import { ReservationsComponent } from './features/reservations/reservations.component';
 import { RentalsComponent } from './features/rentals/rentals.component';
+import { PaymentsComponent } from './features/payments/payments.component';
 import { PlaceholderPageComponent } from './features/placeholder-page/placeholder-page.component';
 
 export const routes: Routes = [
@@ -25,11 +26,7 @@ export const routes: Routes = [
       { path: 'vehicles', component: VehiclesComponent },
       { path: 'reservations', component: ReservationsComponent },
       { path: 'rentals', component: RentalsComponent },
-      {
-        path: 'payments',
-        component: PlaceholderPageComponent,
-        data: { title: 'Payments', description: 'Payment operations will be enabled after tenant ownership hardening is completed on the backend.' }
-      },
+      { path: 'payments', component: PaymentsComponent },
       {
         path: 'ai-pricing',
         component: PlaceholderPageComponent,

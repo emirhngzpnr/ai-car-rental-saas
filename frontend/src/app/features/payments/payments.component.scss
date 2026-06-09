@@ -1,0 +1,94 @@
+.payment-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.operation-panel {
+  overflow: hidden;
+}
+
+.panel-heading {
+  border-bottom: 1px solid var(--acr-border-soft);
+  padding: 16px;
+}
+
+.panel-heading h2 {
+  color: var(--acr-text);
+  font-size: 16px;
+  font-weight: 650;
+  margin: 0 0 4px;
+}
+
+.panel-heading span {
+  color: var(--acr-text-muted);
+  font-size: 13px;
+}
+
+.result-panel {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+.result-panel strong,
+.result-panel span {
+  display: block;
+}
+
+.result-panel strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.result-panel span {
+  color: var(--acr-text-muted);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.state-panel {
+  padding: 18px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+th {
+  color: var(--acr-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stacked strong {
+  color: var(--acr-text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.stacked span {
+  color: var(--acr-text-muted);
+  font-size: 12px;
+}
+
+.actions-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+mat-icon {
+  font-family: 'Material Icons Round';
+}
