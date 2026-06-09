@@ -1,0 +1,27 @@
+<section class="acr-page">
+  <acr-page-header [title]="title()" [description]="description()">
+    <button mat-stroked-button type="button" disabled>
+      <mat-icon>filter_list</mat-icon>
+      Filters
+    </button>
+  </acr-page-header>
+
+  <section class="acr-panel table-shell">
+    <div class="table-toolbar">
+      <div>
+        <h2>{{ title() }} records</h2>
+        <span>Backend integration pending</span>
+      </div>
+      <button mat-flat-button color="primary" type="button" disabled>
+        <mat-icon>add</mat-icon>
+        New
+      </button>
+    </div>
+
+    <acr-empty-state
+      icon="table_rows"
+      [title]="title() + ' data is not connected yet'"
+      message="This page has the operational layout prepared. Live API integration will be added in the relevant feature phase without mock data."
+    />
+  </section>
+</section>

@@ -1,0 +1,44 @@
+<section class="acr-page">
+  <acr-page-header
+    title="Dashboard"
+    description="Operational overview for fleet availability, rental activity, payments and tenant workload."
+  >
+    <button mat-stroked-button type="button">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+  </acr-page-header>
+
+  <section class="dashboard-grid" aria-label="Dashboard sections">
+    <article class="acr-panel summary-panel">
+      <div class="panel-heading">
+        <h2>Operational summary</h2>
+        <span>Live API integration is scheduled for phase 2.</span>
+      </div>
+      <acr-empty-state
+        icon="monitoring"
+        title="Dashboard metrics are not connected yet"
+        message="This page is ready for live backend data from the reports API. No mock figures are shown in this foundation phase."
+      />
+    </article>
+
+    <article class="acr-panel side-panel">
+      <div class="panel-heading">
+        <h2>Work queue</h2>
+        <span>Reservations, rentals and payment actions will appear here after API integration.</span>
+      </div>
+      <div class="queue-row">
+        <mat-icon>event_available</mat-icon>
+        <span>Reservation workflow</span>
+      </div>
+      <div class="queue-row">
+        <mat-icon>assignment_turned_in</mat-icon>
+        <span>Rental handover</span>
+      </div>
+      <div class="queue-row">
+        <mat-icon>payments</mat-icon>
+        <span>Payment review</span>
+      </div>
+    </article>
+  </section>
+</section>

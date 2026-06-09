@@ -1,0 +1,57 @@
+<div class="shell" [class.shell--nav-open]="mobileNavOpen()">
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <div class="brand-mark">
+        <mat-icon>directions_car</mat-icon>
+      </div>
+      <div>
+        <strong>AI Car Rental</strong>
+        <span>Operations</span>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Main navigation">
+      @for (item of navItems(); track item.route) {
+        <a
+          [routerLink]="item.route"
+          routerLinkActive="is-active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          (click)="closeMobileNav()"
+        >
+          <mat-icon>{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <div class="shell__backdrop" (click)="closeMobileNav()"></div>
+
+  <section class="workspace">
+    <header class="topbar">
+      <button mat-icon-button type="button" class="menu-button" (click)="mobileNavOpen.set(true)" aria-label="Open menu">
+        <mat-icon>menu</mat-icon>
+      </button>
+
+      <div class="topbar__context">
+        <span>Rental Operations</span>
+        <strong>Control Center</strong>
+      </div>
+
+      <div class="topbar__user">
+        <div class="user-copy">
+          <strong>{{ session()?.email }}</strong>
+          <span>{{ session()?.role }}</span>
+        </div>
+        <button mat-stroked-button type="button" (click)="logout()">
+          <mat-icon>logout</mat-icon>
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <router-outlet />
+    </main>
+  </section>
+</div>
