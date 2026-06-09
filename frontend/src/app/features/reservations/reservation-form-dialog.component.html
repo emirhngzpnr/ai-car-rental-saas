@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>New reservation</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" class="reservation-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Vehicle</mat-label>
+      <mat-select formControlName="vehicleId">
+        @for (vehicle of data.vehicles; track vehicle.id) {
+          <mat-option [value]="vehicle.id">{{ vehicle.brand }} {{ vehicle.model }} - {{ vehicle.plateNumber }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.vehicleId.hasError('min')) { <mat-error>Vehicle is required</mat-error> }
+    </mat-form-field>
+
+    <div class="form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Customer full name</mat-label>
+        <input matInput formControlName="customerFullName">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Customer phone</mat-label>
+        <input matInput formControlName="customerPhone">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Customer email</mat-label>
+        <input matInput type="email" formControlName="customerEmail">
+        @if (form.controls.customerEmail.hasError('email')) { <mat-error>Enter a valid email</mat-error> }
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Identity number</mat-label>
+        <input matInput formControlName="customerIdentityNumber">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Pickup date/time</mat-label>
+        <input matInput type="datetime-local" formControlName="pickupDateTime">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Return date/time</mat-label>
+        <input matInput type="datetime-local" formControlName="returnDateTime">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Insurance package id</mat-label>
+        <input matInput type="number" formControlName="insurancePackageId" placeholder="Optional">
+      </mat-form-field>
+    </div>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancel</button>
+  <button mat-flat-button color="primary" type="button" (click)="save()">Create reservation</button>
+</mat-dialog-actions>

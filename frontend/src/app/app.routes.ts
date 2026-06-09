@@ -6,6 +6,8 @@ import { AppShellComponent } from './layout/app-shell/app-shell.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { VehiclesComponent } from './features/vehicles/vehicles.component';
+import { ReservationsComponent } from './features/reservations/reservations.component';
+import { RentalsComponent } from './features/rentals/rentals.component';
 import { PlaceholderPageComponent } from './features/placeholder-page/placeholder-page.component';
 
 export const routes: Routes = [
@@ -21,16 +23,8 @@ export const routes: Routes = [
     children: [
       { path: 'dashboard', component: DashboardComponent },
       { path: 'vehicles', component: VehiclesComponent },
-      {
-        path: 'reservations',
-        component: PlaceholderPageComponent,
-        data: { title: 'Reservations', description: 'Reservation workflows will use live backend data for booking, confirmation and cancellation.' }
-      },
-      {
-        path: 'rentals',
-        component: PlaceholderPageComponent,
-        data: { title: 'Rentals', description: 'Rental start and completion operations will be added with mileage and deposit controls.' }
-      },
+      { path: 'reservations', component: ReservationsComponent },
+      { path: 'rentals', component: RentalsComponent },
       {
         path: 'payments',
         component: PlaceholderPageComponent,

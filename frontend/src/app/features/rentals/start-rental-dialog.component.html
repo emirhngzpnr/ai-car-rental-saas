@@ -1,0 +1,27 @@
+<h2 mat-dialog-title>Start rental</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" class="rental-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Confirmed reservation</mat-label>
+      <mat-select formControlName="reservationId">
+        @for (reservation of data.reservations; track reservation.id) {
+          <mat-option [value]="reservation.id">#{{ reservation.id }} - {{ reservation.customerFullName }} - {{ reservation.vehiclePlateNumber }}</mat-option>
+        }
+      </mat-select>
+      @if (form.controls.reservationId.hasError('min')) { <mat-error>Reservation is required</mat-error> }
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Actual pickup date/time</mat-label>
+      <input matInput type="datetime-local" formControlName="actualPickupDateTime">
+    </mat-form-field>
+    <mat-form-field appearance="outline">
+      <mat-label>Start mileage</mat-label>
+      <input matInput type="number" formControlName="startMileage">
+      @if (form.controls.startMileage.hasError('min')) { <mat-error>Start mileage cannot be negative</mat-error> }
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancel</button>
+  <button mat-flat-button color="primary" type="button" (click)="save()">Start rental</button>
+</mat-dialog-actions>
