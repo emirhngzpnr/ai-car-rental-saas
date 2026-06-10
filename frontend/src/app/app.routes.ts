@@ -28,14 +28,16 @@ export const routes: Routes = [
       { path: 'rentals', component: RentalsComponent },
       { path: 'payments', component: PaymentsComponent },
       {
+        path: 'reports',
+        loadComponent: () => import('./features/reports/reports.component').then((component) => component.ReportsComponent)
+      },
+      {
         path: 'ai-pricing',
-        component: PlaceholderPageComponent,
-        data: { title: 'AI Pricing', description: 'Decision support recommendations will be presented with approval controls and confidence indicators.' }
+        loadComponent: () => import('./features/ai-pricing/ai-pricing.component').then((component) => component.AiPricingComponent)
       },
       {
         path: 'notifications',
-        component: PlaceholderPageComponent,
-        data: { title: 'Notifications', description: 'Operational notification history and delivery status will be connected to the backend notification API.' }
+        loadComponent: () => import('./features/notifications/notifications.component').then((component) => component.NotificationsComponent)
       },
       {
         path: 'tenant-settings',

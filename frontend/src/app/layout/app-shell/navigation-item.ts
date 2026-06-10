@@ -13,6 +13,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
   { label: 'Reservations', icon: 'event_available', route: '/app/reservations' },
   { label: 'Rentals', icon: 'assignment_turned_in', route: '/app/rentals' },
   { label: 'Payments', icon: 'payments', route: '/app/payments' },
+  { label: 'Reports', icon: 'bar_chart', route: '/app/reports' },
   { label: 'AI Pricing', icon: 'insights', route: '/app/ai-pricing' },
   { label: 'Notifications', icon: 'notifications', route: '/app/notifications' },
   { label: 'Tenant Settings', icon: 'tune', route: '/app/tenant-settings' },

@@ -1,0 +1,15 @@
+.filter-panel { padding: 16px; }
+.filter-form { align-items: center; display: flex; gap: 12px; }
+.filter-form mat-form-field { width: 220px; }
+.table-panel { overflow: hidden; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; }
+th { color: var(--acr-text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.stacked { display: flex; flex-direction: column; gap: 3px; }
+.stacked strong { color: var(--acr-text); font-size: 14px; font-weight: 650; }
+.stacked span { color: var(--acr-text-muted); font-size: 12px; }
+mat-icon { font-family: 'Material Icons Round'; }
+@media (max-width: 860px) {
+  .filter-form { align-items: stretch; flex-direction: column; }
+  .filter-form mat-form-field { width: 100%; }
+}

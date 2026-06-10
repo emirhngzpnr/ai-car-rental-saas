@@ -1,0 +1,31 @@
+.decision-grid { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) minmax(340px, .85fr); }
+.request-panel, .recommendation-panel, .table-panel { overflow: hidden; }
+.panel-heading { border-bottom: 1px solid var(--acr-border-soft); padding: 16px; }
+.panel-heading h2 { color: var(--acr-text); font-size: 16px; font-weight: 650; margin: 0 0 4px; }
+.panel-heading span { color: var(--acr-text-muted); font-size: 13px; }
+.recommendation-form { align-items: center; display: flex; gap: 12px; padding: 16px; }
+.recommendation-form mat-form-field { flex: 1; }
+.recommendation-body { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 16px; }
+.recommendation-body div span { color: var(--acr-text-muted); display: block; font-size: 12px; margin-bottom: 6px; }
+.recommendation-body strong { color: var(--acr-text); font-size: 18px; }
+.recommendation-body p { border-top: 1px solid var(--acr-border-soft); color: var(--acr-text-muted); grid-column: 1 / -1; line-height: 1.5; margin: 0; padding-top: 14px; }
+.confidence { background: #eef6ff; border-radius: 999px; color: #185abc; display: inline-flex; font-size: 12px; font-weight: 700; padding: 5px 9px; }
+.table-toolbar { border-bottom: 1px solid var(--acr-border-soft); padding: 16px; }
+.filter-form { align-items: center; display: flex; gap: 12px; }
+.filter-form mat-form-field { width: 220px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; }
+th { color: var(--acr-text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.stacked { display: flex; flex-direction: column; gap: 3px; }
+.stacked strong { color: var(--acr-text); font-size: 14px; font-weight: 650; }
+.stacked span { color: var(--acr-text-muted); font-size: 12px; }
+.actions-cell { display: flex; gap: 8px; justify-content: flex-end; white-space: nowrap; }
+mat-icon { font-family: 'Material Icons Round'; }
+@media (max-width: 1100px) {
+  .decision-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .recommendation-form, .filter-form { align-items: stretch; flex-direction: column; }
+  .recommendation-form mat-form-field, .filter-form mat-form-field { width: 100%; }
+  .recommendation-body { grid-template-columns: 1fr; }
+}
