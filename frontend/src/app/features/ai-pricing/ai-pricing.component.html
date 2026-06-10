@@ -1,0 +1,95 @@
+<section class="acr-page">
+  <acr-page-header title="AI Pricing" description="Review price recommendations as operational decision support, with clear approval controls.">
+    <button mat-stroked-button type="button" (click)="loadRecommendations()" [disabled]="loading()"><mat-icon>refresh</mat-icon>Refresh</button>
+  </acr-page-header>
+
+  @if (error()) { <acr-error-state [message]="error()" /> }
+
+  <section class="decision-grid">
+    <article class="acr-panel request-panel">
+      <div class="panel-heading"><h2>Request recommendation</h2><span>Select a vehicle and generate a pricing recommendation from current rental analytics.</span></div>
+      <form [formGroup]="recommendationForm" class="recommendation-form" (ngSubmit)="requestRecommendation()">
+        <mat-form-field appearance="outline">
+          <mat-label>Vehicle</mat-label>
+          <mat-select formControlName="vehicleId">
+            @for (vehicle of vehicles(); track vehicle.id) {
+              <mat-option [value]="vehicle.id">{{ vehicle.brand }} {{ vehicle.model }} - {{ vehicle.plateNumber }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button mat-flat-button color="primary" type="submit" [disabled]="processing() || recommendationForm.invalid">Generate</button>
+      </form>
+    </article>
+
+    <article class="acr-panel recommendation-panel">
+      <div class="panel-heading"><h2>Latest recommendation</h2><span>Generated result for immediate review.</span></div>
+      @if (recommendation(); as item) {
+        <div class="recommendation-body">
+          <div><span>Current</span><strong>{{ money(item.currentDailyPrice) }}</strong></div>
+          <div><span>Recommended</span><strong>{{ money(item.recommendedDailyPrice) }}</strong></div>
+          <div><span>Confidence</span><span class="confidence">{{ item.confidenceLevel }}</span></div>
+          <p>{{ item.reason }}</p>
+        </div>
+      } @else {
+        <acr-empty-state icon="insights" title="No recommendation generated" message="Choose a vehicle to request a pricing recommendation." />
+      }
+    </article>
+  </section>
+
+  <section class="acr-panel table-panel">
+    <div class="table-toolbar">
+      <form [formGroup]="filterForm" class="filter-form" (ngSubmit)="applyFilters()">
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            @for (status of statuses; track status) {
+              <mat-option [value]="status">{{ status || 'ALL' }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <button mat-stroked-button type="submit">Apply</button>
+      </form>
+    </div>
+
+    @if (loading()) {
+      <acr-loading-state label="Loading AI pricing recommendations" />
+    } @else if (recommendations().length === 0) {
+      <acr-empty-state icon="insights" title="No recommendations found" message="Recommendations will appear after a vehicle pricing request is generated." />
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="recommendations()">
+          <ng-container matColumnDef="vehicle">
+            <th mat-header-cell *matHeaderCellDef>Vehicle</th>
+            <td mat-cell *matCellDef="let item"><div class="stacked"><strong>{{ item.brand }} {{ item.model }}</strong><span>{{ item.plateNumber }}</span></div></td>
+          </ng-container>
+          <ng-container matColumnDef="prices">
+            <th mat-header-cell *matHeaderCellDef>Prices</th>
+            <td mat-cell *matCellDef="let item"><div class="stacked"><strong>{{ money(item.recommendedPrice) }}</strong><span>Current {{ money(item.currentPrice) }}</span></div></td>
+          </ng-container>
+          <ng-container matColumnDef="confidence">
+            <th mat-header-cell *matHeaderCellDef>Confidence</th>
+            <td mat-cell *matCellDef="let item"><span class="confidence">{{ item.confidenceLevel }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let item"><acr-status-badge [status]="item.status" /></td>
+          </ng-container>
+          <ng-container matColumnDef="createdAt">
+            <th mat-header-cell *matHeaderCellDef>Created</th>
+            <td mat-cell *matCellDef="let item">{{ item.createdAt | date:'short' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let item" class="actions-cell">
+              <button mat-button type="button" [disabled]="!canAct(item) || processing()" (click)="reject(item)">Reject</button>
+              <button mat-flat-button color="primary" type="button" [disabled]="!canAct(item) || processing()" (click)="approve(item)">Approve</button>
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+        </table>
+      </div>
+      <mat-paginator [length]="totalElements()" [pageIndex]="pageIndex()" [pageSize]="pageSize()" [pageSizeOptions]="[5, 10, 25]" (page)="pageChanged($event)" showFirstLastButtons />
+    }
+  </section>
+</section>
