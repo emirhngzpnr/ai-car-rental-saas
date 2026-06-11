@@ -3,7 +3,6 @@ import { authGuard } from './core/auth/auth.guard';
 import { guestGuard } from './core/auth/guest.guard';
 import { roleGuard } from './core/auth/role.guard';
 import { AppShellComponent } from './layout/app-shell/app-shell.component';
-import { LoginComponent } from './features/auth/login/login.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { VehiclesComponent } from './features/vehicles/vehicles.component';
 import { ReservationsComponent } from './features/reservations/reservations.component';
@@ -13,7 +12,7 @@ import { PaymentsComponent } from './features/payments/payments.component';
 export const routes: Routes = [
   {
     path: 'login',
-    component: LoginComponent,
+    loadComponent: () => import('./features/auth/login/login.component').then((component) => component.LoginComponent),
     canActivate: [guestGuard]
   },
   {
