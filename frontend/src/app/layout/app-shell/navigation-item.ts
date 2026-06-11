@@ -16,7 +16,18 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
   { label: 'Reports', icon: 'bar_chart', route: '/app/reports' },
   { label: 'AI Pricing', icon: 'insights', route: '/app/ai-pricing' },
   { label: 'Notifications', icon: 'notifications', route: '/app/notifications' },
-  { label: 'Tenant Settings', icon: 'tune', route: '/app/tenant-settings' },
+  {
+    label: 'Tenant Settings',
+    icon: 'tune',
+    route: '/app/tenant-settings',
+    roles: ['TENANT_ADMIN', 'TENANT_STAFF']
+  },
+  {
+    label: 'Insurance Packages',
+    icon: 'verified_user',
+    route: '/app/insurance-packages',
+    roles: ['SUPER_ADMIN', 'TENANT_ADMIN']
+  },
   {
     label: 'Users',
     icon: 'group',

@@ -1,0 +1,49 @@
+.settings-panel {
+  overflow: hidden;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+th {
+  color: var(--acr-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 260px;
+}
+
+.stacked strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.stacked span {
+  color: var(--acr-text-muted);
+  font-size: 12px;
+}
+
+.value-field {
+  margin: 12px 0;
+  width: min(360px, 100%);
+}
+
+.actions-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+mat-icon {
+  font-family: 'Material Icons Round';
+}

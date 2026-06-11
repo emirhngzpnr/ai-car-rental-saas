@@ -1,0 +1,38 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit tenant' : 'New tenant' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="tenant-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Company name</mat-label>
+      <input matInput formControlName="companyName">
+      @if (form.controls.companyName.hasError('required')) { <mat-error>Company name is required</mat-error> }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Subdomain</mat-label>
+      <input matInput formControlName="subDomain">
+      @if (form.controls.subDomain.hasError('required')) { <mat-error>Subdomain is required</mat-error> }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Email</mat-label>
+      <input matInput type="email" formControlName="email">
+      @if (form.controls.email.hasError('email')) { <mat-error>Email format is invalid</mat-error> }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Phone number</mat-label>
+      <input matInput formControlName="phoneNumber">
+      @if (form.controls.phoneNumber.hasError('required')) { <mat-error>Phone number is required</mat-error> }
+    </mat-form-field>
+
+    @if (isEdit) {
+      <mat-checkbox formControlName="active">Active tenant</mat-checkbox>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancel</button>
+  <button mat-flat-button color="primary" type="button" (click)="save()">{{ isEdit ? 'Save changes' : 'Create tenant' }}</button>
+</mat-dialog-actions>

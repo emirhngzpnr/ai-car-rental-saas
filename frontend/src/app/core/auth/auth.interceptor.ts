@@ -1,19 +1,36 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { AuthStorageService } from './auth-storage.service';
+import { Router } from '@angular/router';
+import { catchError, throwError } from 'rxjs';
+import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  const session = inject(AuthStorageService).getSession();
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  const session = authService.session();
 
-  if (!session?.token) {
-    return next(request);
+  if (session && !authService.isSessionValid(session)) {
+    authService.logout();
+    void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+    return throwError(() => new Error('Session expired'));
   }
 
-  return next(
-    request.clone({
-      setHeaders: {
-        Authorization: `${session.tokenType} ${session.token}`
+  const authorizedRequest = session?.token
+    ? request.clone({
+        setHeaders: {
+          Authorization: `${session.tokenType} ${session.token}`
+        }
+      })
+    : request;
+
+  return next(authorizedRequest).pipe(
+    catchError((error) => {
+      if (error.status === 401) {
+        authService.logout();
+        void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
       }
+
+      return throwError(() => error);
     })
   );
 };

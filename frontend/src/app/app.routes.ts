@@ -9,7 +9,6 @@ import { VehiclesComponent } from './features/vehicles/vehicles.component';
 import { ReservationsComponent } from './features/reservations/reservations.component';
 import { RentalsComponent } from './features/rentals/rentals.component';
 import { PaymentsComponent } from './features/payments/payments.component';
-import { PlaceholderPageComponent } from './features/placeholder-page/placeholder-page.component';
 
 export const routes: Routes = [
   {
@@ -41,27 +40,30 @@ export const routes: Routes = [
       },
       {
         path: 'tenant-settings',
-        component: PlaceholderPageComponent,
-        data: { title: 'Tenant Settings', description: 'Tenant-level configuration will be managed here for pricing, automation and operational defaults.' }
+        loadComponent: () => import('./features/tenant-settings/tenant-settings.component').then((component) => component.TenantSettingsComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['TENANT_ADMIN', 'TENANT_STAFF'] }
+      },
+      {
+        path: 'insurance-packages',
+        loadComponent: () => import('./features/insurance-packages/insurance-packages.component').then((component) => component.InsurancePackagesComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['SUPER_ADMIN', 'TENANT_ADMIN'] }
       },
       {
         path: 'users',
-        component: PlaceholderPageComponent,
+        loadComponent: () => import('./features/users/users.component').then((component) => component.UsersComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SUPER_ADMIN', 'TENANT_ADMIN'],
-          title: 'Users',
-          description: 'User management will support tenant staff operations with role-aware actions.'
+          roles: ['SUPER_ADMIN', 'TENANT_ADMIN']
         }
       },
       {
         path: 'tenants',
-        component: PlaceholderPageComponent,
+        loadComponent: () => import('./features/tenants/tenants.component').then((component) => component.TenantsComponent),
         canActivate: [roleGuard],
         data: {
-          roles: ['SUPER_ADMIN'],
-          title: 'Tenants',
-          description: 'Tenant administration is reserved for platform operators.'
+          roles: ['SUPER_ADMIN']
         }
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' }

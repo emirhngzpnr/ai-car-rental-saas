@@ -10,13 +10,14 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly authStorage = inject(AuthStorageService);
 
-  private readonly sessionSignal = signal<AuthSession | null>(
-    this.authStorage.getSession()
-  );
+  private readonly sessionSignal = signal<AuthSession | null>(this.loadInitialSession());
 
   readonly session = this.sessionSignal.asReadonly();
-  readonly isAuthenticated = computed(() => Boolean(this.sessionSignal()?.token));
-  readonly currentRole = computed(() => this.sessionSignal()?.role ?? null);
+  readonly isAuthenticated = computed(() => this.isSessionValid(this.sessionSignal()));
+  readonly currentRole = computed(() => {
+    const session = this.sessionSignal();
+    return this.isSessionValid(session) ? session?.role ?? null : null;
+  });
 
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http
@@ -43,8 +44,44 @@ export class AuthService {
     this.sessionSignal.set(null);
   }
 
+  isSessionValid(session: AuthSession | null): boolean {
+    return Boolean(session?.token && !this.isTokenExpired(session.token));
+  }
+
   hasAnyRole(roles: UserRole[]): boolean {
     const role = this.currentRole();
     return Boolean(role && roles.includes(role));
+  }
+
+  private loadInitialSession(): AuthSession | null {
+    const session = this.authStorage.getSession();
+
+    if (!this.isSessionValid(session)) {
+      this.authStorage.clearSession();
+      return null;
+    }
+
+    return session;
+  }
+
+  private isTokenExpired(token: string): boolean {
+    const payload = this.decodeJwtPayload(token);
+    if (!payload?.exp) return true;
+
+    const expiresAt = payload.exp * 1000;
+    return expiresAt <= Date.now();
+  }
+
+  private decodeJwtPayload(token: string): { exp?: number } | null {
+    try {
+      const payload = token.split('.')[1];
+      if (!payload) return null;
+
+      const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(normalized.length + (4 - normalized.length % 4) % 4, '=');
+      return JSON.parse(atob(padded)) as { exp?: number };
+    } catch {
+      return null;
+    }
   }
 }

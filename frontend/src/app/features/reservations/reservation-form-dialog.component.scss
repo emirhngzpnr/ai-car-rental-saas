@@ -1,6 +1,22 @@
 .reservation-form { min-width: min(760px, 78vw); padding-top: 6px; }
 .form-grid { display: grid; gap: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.availability-action {
+  align-items: center;
+  color: var(--acr-text-muted);
+  display: flex;
+  gap: 12px;
+}
+
+.availability-action span {
+  font-size: 12px;
+}
+
+mat-icon {
+  font-family: 'Material Icons Round';
+}
+
 @media (max-width: 720px) {
   .reservation-form { min-width: 0; }
   .form-grid { grid-template-columns: 1fr; }
+  .availability-action { align-items: stretch; flex-direction: column; }
 }

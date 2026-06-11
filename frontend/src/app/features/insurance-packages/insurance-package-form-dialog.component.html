@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit insurance package' : 'New insurance package' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="insurance-form">
+    <mat-form-field appearance="outline">
+      <mat-label>Package type</mat-label>
+      <mat-select formControlName="type">
+        @for (type of types; track type) {
+          <mat-option [value]="type">{{ type }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Name</mat-label>
+      <input matInput formControlName="name">
+      @if (form.controls.name.hasError('required')) { <mat-error>Name is required</mat-error> }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Coverage description</mat-label>
+      <textarea matInput rows="4" formControlName="coverageDescription"></textarea>
+      @if (form.controls.coverageDescription.hasError('required')) { <mat-error>Coverage description is required</mat-error> }
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Daily price</mat-label>
+      <input matInput type="number" formControlName="dailyPrice">
+      @if (form.controls.dailyPrice.hasError('min')) { <mat-error>Daily price cannot be negative</mat-error> }
+    </mat-form-field>
+
+    @if (isEdit) {
+      <mat-checkbox formControlName="active">Active insurance package</mat-checkbox>
+    }
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button type="button" mat-dialog-close>Cancel</button>
+  <button mat-flat-button color="primary" type="button" (click)="save()">{{ isEdit ? 'Save changes' : 'Create package' }}</button>
+</mat-dialog-actions>
