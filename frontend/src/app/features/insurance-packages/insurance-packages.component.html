@@ -1,0 +1,76 @@
+<section class="acr-page">
+  <acr-page-header title="Insurance Packages" description="Maintain tenant-level coverage options used during reservation operations.">
+    <div class="header-actions">
+      <button mat-stroked-button type="button" (click)="loadPackages()" [disabled]="loading() || saving() || !tenantId()">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      @if (canManage()) {
+        <button mat-flat-button color="primary" type="button" (click)="openCreateDialog()" [disabled]="saving() || !tenantId()">
+          <mat-icon>add</mat-icon>
+          New package
+        </button>
+      }
+    </div>
+  </acr-page-header>
+
+  @if (error()) {
+    <acr-error-state [message]="error()" />
+  }
+
+  <section class="acr-panel package-panel">
+    @if (!tenantId()) {
+      <acr-empty-state icon="business" title="Tenant context required" message="Insurance packages are tenant-scoped. Use a tenant account to manage coverage options." />
+    } @else if (loading()) {
+      <acr-loading-state label="Loading insurance packages" />
+    } @else if (packages().length === 0) {
+      <acr-empty-state icon="verified_user" title="No insurance packages found" message="Create coverage packages before using insurance options in rental operations." />
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="packages()">
+          <ng-container matColumnDef="package">
+            <th mat-header-cell *matHeaderCellDef>Package</th>
+            <td mat-cell *matCellDef="let item">
+              <div class="stacked">
+                <strong>{{ item.name }}</strong>
+                <span>{{ item.type }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="coverage">
+            <th mat-header-cell *matHeaderCellDef>Coverage</th>
+            <td mat-cell *matCellDef="let item" class="coverage">{{ item.coverageDescription }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="price">
+            <th mat-header-cell *matHeaderCellDef>Daily price</th>
+            <td mat-cell *matCellDef="let item"><strong>{{ money(item.dailyPrice) }}</strong></td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let item"><acr-status-badge [status]="item.active ? 'ACTIVE' : 'PASSIVE'" /></td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let item" class="actions-cell">
+              @if (canManage()) {
+                <button mat-icon-button type="button" matTooltip="Edit package" (click)="openEditDialog(item)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button type="button" matTooltip="Deactivate package" (click)="deactivatePackage(item)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+        </table>
+      </div>
+    }
+  </section>
+</section>

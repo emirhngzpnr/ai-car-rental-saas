@@ -1,0 +1,33 @@
+.confirm-body {
+  align-items: flex-start;
+  display: flex;
+  gap: 14px;
+  max-width: 520px;
+}
+
+.confirm-body p {
+  color: var(--acr-text);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.confirm-icon {
+  align-items: center;
+  background: #eff6ff;
+  border-radius: 999px;
+  color: var(--acr-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 36px;
+  justify-content: center;
+  width: 36px;
+}
+
+.confirm-icon--danger {
+  background: #fef2f2;
+  color: var(--acr-danger);
+}
+
+mat-icon {
+  font-family: 'Material Icons Round';
+}

@@ -11,6 +11,7 @@ import { ErrorStateComponent } from '../../shared/error-state/error-state.compon
 import { LoadingStateComponent } from '../../shared/loading-state/loading-state.component';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
+import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 import { InvoiceResponse } from '../invoices/invoice.models';
 import { InvoiceService } from '../invoices/invoice.service';
 import { RentalResponse } from '../rentals/rental.models';
@@ -41,6 +42,7 @@ export class PaymentsComponent implements OnInit {
   private readonly rentalService = inject(RentalService);
   private readonly paymentService = inject(PaymentService);
   private readonly invoiceService = inject(InvoiceService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly loading = signal(false);
   readonly processing = signal(false);
@@ -77,28 +79,32 @@ export class PaymentsComponent implements OnInit {
   }
 
   createDepositPayment(reservation: ReservationResponse): void {
-    const confirmed = window.confirm(`Create deposit payment for reservation #${reservation.id}?`);
-    if (!confirmed) return;
-
-    this.processing.set(true);
-    this.error.set('');
-    this.paymentService.createPayment({
-      tenantId: reservation.tenantId,
-      reservationId: reservation.id,
-      rentalId: null,
-      paymentType: 'DEPOSIT_PAYMENT',
-      amount: reservation.depositAmount,
-      idempotencyKey: this.createIdempotencyKey('deposit', reservation.id)
-    }).subscribe({
-      next: (payment) => {
-        this.lastPayment.set(payment);
-        this.loadData();
-      },
-      error: (error: HttpErrorResponse) => {
-        this.error.set(error.error?.message || 'Deposit payment could not be created.');
-        this.processing.set(false);
-      },
-      complete: () => this.processing.set(false)
+    this.confirmDialog.confirm({
+      title: 'Create deposit payment',
+      message: `Create deposit payment for reservation #${reservation.id}? The payment request will use a new idempotency key.`,
+      confirmLabel: 'Create payment'
+    }).subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.processing.set(true);
+      this.error.set('');
+      this.paymentService.createPayment({
+        tenantId: reservation.tenantId,
+        reservationId: reservation.id,
+        rentalId: null,
+        paymentType: 'DEPOSIT_PAYMENT',
+        amount: reservation.depositAmount,
+        idempotencyKey: this.createIdempotencyKey('deposit', reservation.id)
+      }).subscribe({
+        next: (payment) => {
+          this.lastPayment.set(payment);
+          this.loadData();
+        },
+        error: (error: HttpErrorResponse) => {
+          this.error.set(error.error?.message || 'Deposit payment could not be created.');
+          this.processing.set(false);
+        },
+        complete: () => this.processing.set(false)
+      });
     });
   }
 

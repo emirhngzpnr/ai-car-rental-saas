@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -11,6 +11,14 @@ export class VehicleService {
 
   getVehicles(): Observable<VehicleResponse[]> {
     return this.http.get<VehicleResponse[]>(this.baseUrl);
+  }
+
+  getAvailableVehicles(pickupDateTime: string, returnDateTime: string): Observable<VehicleResponse[]> {
+    return this.http.get<VehicleResponse[]>(`${this.baseUrl}/available`, {
+      params: new HttpParams()
+        .set('pickupDateTime', pickupDateTime)
+        .set('returnDateTime', returnDateTime)
+    });
   }
 
   createVehicle(request: CreateVehicleRequest): Observable<VehicleResponse> {

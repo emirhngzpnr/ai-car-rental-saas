@@ -1,0 +1,74 @@
+<section class="acr-page">
+  <acr-page-header title="Tenant Settings" description="Review and maintain tenant-level operational configuration.">
+    <button mat-stroked-button type="button" (click)="loadSettings()" [disabled]="loading() || !!savingKey()">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+  </acr-page-header>
+
+  @if (error()) {
+    <acr-error-state [message]="error()" />
+  }
+
+  <section class="acr-panel settings-panel">
+    @if (loading()) {
+      <acr-loading-state label="Loading tenant settings" />
+    } @else if (settings().length === 0) {
+      <acr-empty-state icon="tune" title="No tenant settings found" message="Tenant defaults will appear here when configuration records are available." />
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="settings()">
+          <ng-container matColumnDef="setting">
+            <th mat-header-cell *matHeaderCellDef>Setting</th>
+            <td mat-cell *matCellDef="let setting">
+              <div class="stacked">
+                <strong>{{ setting.settingKey }}</strong>
+                <span>{{ setting.description || 'No description provided' }}</span>
+              </div>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="value">
+            <th mat-header-cell *matHeaderCellDef>Value</th>
+            <td mat-cell *matCellDef="let setting">
+              @if (setting.dataType === 'BOOLEAN') {
+                <mat-form-field appearance="outline" class="value-field">
+                  <mat-select [ngModel]="editValues()[setting.settingKey]" (ngModelChange)="updateValue(setting, $event)" [disabled]="!canManage()">
+                    <mat-option value="true">Enabled</mat-option>
+                    <mat-option value="false">Disabled</mat-option>
+                  </mat-select>
+                </mat-form-field>
+              } @else {
+                <mat-form-field appearance="outline" class="value-field">
+                  <input matInput [type]="setting.dataType === 'STRING' ? 'text' : 'number'" [ngModel]="editValues()[setting.settingKey]" (ngModelChange)="updateValue(setting, $event)" [disabled]="!canManage()">
+                </mat-form-field>
+              }
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let setting">{{ setting.dataType }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let setting"><acr-status-badge [status]="setting.active ? 'ACTIVE' : 'PASSIVE'" /></td>
+          </ng-container>
+
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let setting" class="actions-cell">
+              <button mat-flat-button color="primary" type="button" (click)="save(setting)" [disabled]="!canManage() || !isDirty(setting) || !isValid(setting) || savingKey() === setting.settingKey">
+                Save
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+        </table>
+      </div>
+    }
+  </section>
+</section>

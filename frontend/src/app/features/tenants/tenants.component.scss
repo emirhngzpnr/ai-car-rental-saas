@@ -1,0 +1,12 @@
+.header-actions { display: flex; gap: 10px; }
+.tenants-panel { overflow: hidden; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; }
+th { color: var(--acr-text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; }
+.stacked { display: flex; flex-direction: column; gap: 3px; min-width: 170px; }
+.stacked strong { font-size: 14px; font-weight: 650; }
+.stacked span { color: var(--acr-text-muted); font-size: 12px; }
+.code-pill { background: #f8fafc; border: 1px solid var(--acr-border); border-radius: 5px; display: inline-flex; font-size: 13px; font-weight: 700; padding: 4px 8px; }
+.actions-cell { text-align: right; white-space: nowrap; }
+mat-icon { font-family: 'Material Icons Round'; }
+@media (max-width: 760px) { .header-actions { align-items: stretch; flex-direction: column; width: 100%; } }

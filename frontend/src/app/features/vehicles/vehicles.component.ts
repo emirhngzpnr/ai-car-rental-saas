@@ -13,6 +13,7 @@ import { ErrorStateComponent } from '../../shared/error-state/error-state.compon
 import { LoadingStateComponent } from '../../shared/loading-state/loading-state.component';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
+import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 import { formatTryAmount } from '../../core/format/currency.util';
 import { CreateVehicleRequest, UpdateVehicleRequest, VehicleResponse } from './vehicle.models';
 import { VehicleService } from './vehicle.service';
@@ -43,6 +44,7 @@ export class VehiclesComponent implements OnInit {
   private readonly vehicleService = inject(VehicleService);
   private readonly dialog = inject(MatDialog);
   private readonly authService = inject(AuthService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -126,17 +128,22 @@ export class VehiclesComponent implements OnInit {
   deleteVehicle(vehicle: VehicleResponse): void {
     if (!this.canManage()) return;
 
-    const confirmed = window.confirm(`Deactivate vehicle ${vehicle.plateNumber}?`);
-    if (!confirmed) return;
-
-    this.saving.set(true);
-    this.vehicleService.deleteVehicle(vehicle.id).subscribe({
-      next: () => this.loadVehicles(),
-      error: (error: HttpErrorResponse) => {
-        this.error.set(error.error?.message || 'Vehicle could not be deactivated.');
-        this.saving.set(false);
-      },
-      complete: () => this.saving.set(false)
+    this.confirmDialog.confirm({
+      title: 'Deactivate vehicle',
+      message: `Deactivate vehicle ${vehicle.plateNumber}? Existing historical records will remain available.`,
+      confirmLabel: 'Deactivate',
+      tone: 'danger'
+    }).subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.saving.set(true);
+      this.vehicleService.deleteVehicle(vehicle.id).subscribe({
+        next: () => this.loadVehicles(),
+        error: (error: HttpErrorResponse) => {
+          this.error.set(error.error?.message || 'Vehicle could not be deactivated.');
+          this.saving.set(false);
+        },
+        complete: () => this.saving.set(false)
+      });
     });
   }
 

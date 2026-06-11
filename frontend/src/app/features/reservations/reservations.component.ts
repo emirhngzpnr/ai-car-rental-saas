@@ -15,6 +15,7 @@ import { ErrorStateComponent } from '../../shared/error-state/error-state.compon
 import { LoadingStateComponent } from '../../shared/loading-state/loading-state.component';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
+import { ConfirmDialogService } from '../../shared/confirm-dialog/confirm-dialog.service';
 import { VehicleService } from '../vehicles/vehicle.service';
 import { VehicleResponse } from '../vehicles/vehicle.models';
 import { CreateReservationRequest, ReservationResponse } from './reservation.models';
@@ -31,6 +32,7 @@ export class ReservationsComponent implements OnInit {
   private readonly reservationService = inject(ReservationService);
   private readonly vehicleService = inject(VehicleService);
   private readonly dialog = inject(MatDialog);
+  private readonly confirmDialog = inject(ConfirmDialogService);
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -89,15 +91,22 @@ export class ReservationsComponent implements OnInit {
   }
 
   cancelReservation(reservation: ReservationResponse): void {
-    if (!window.confirm(`Cancel reservation #${reservation.id}?`)) return;
-    this.saving.set(true);
-    this.reservationService.cancelReservation(reservation.id).subscribe({
-      next: () => this.loadAll(),
-      error: (error: HttpErrorResponse) => {
-        this.error.set(error.error?.message || 'Reservation could not be cancelled.');
-        this.saving.set(false);
-      },
-      complete: () => this.saving.set(false)
+    this.confirmDialog.confirm({
+      title: 'Cancel reservation',
+      message: `Cancel reservation #${reservation.id}? This action will release the vehicle for future operations.`,
+      confirmLabel: 'Cancel reservation',
+      tone: 'danger'
+    }).subscribe((confirmed) => {
+      if (!confirmed) return;
+      this.saving.set(true);
+      this.reservationService.cancelReservation(reservation.id).subscribe({
+        next: () => this.loadAll(),
+        error: (error: HttpErrorResponse) => {
+          this.error.set(error.error?.message || 'Reservation could not be cancelled.');
+          this.saving.set(false);
+        },
+        complete: () => this.saving.set(false)
+      });
     });
   }
 

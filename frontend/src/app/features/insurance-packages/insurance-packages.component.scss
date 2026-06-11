@@ -1,0 +1,62 @@
+.header-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.package-panel {
+  overflow: hidden;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+}
+
+th {
+  color: var(--acr-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 170px;
+}
+
+.stacked strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.stacked span,
+.coverage {
+  color: var(--acr-text-muted);
+  font-size: 12px;
+}
+
+.coverage {
+  max-width: 520px;
+}
+
+.actions-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+mat-icon {
+  font-family: 'Material Icons Round';
+}
+
+@media (max-width: 760px) {
+  .header-actions {
+    align-items: stretch;
+    flex-direction: column;
+    width: 100%;
+  }
+}

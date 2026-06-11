@@ -81,8 +81,10 @@
           <ng-container matColumnDef="actions">
             <th mat-header-cell *matHeaderCellDef></th>
             <td mat-cell *matCellDef="let item" class="actions-cell">
-              <button mat-button type="button" [disabled]="!canAct(item) || processing()" (click)="reject(item)">Reject</button>
-              <button mat-flat-button color="primary" type="button" [disabled]="!canAct(item) || processing()" (click)="approve(item)">Approve</button>
+              <div class="action-buttons">
+                <button mat-button type="button" [disabled]="!canAct(item) || processing()" (click)="reject(item)">Reject</button>
+                <button mat-flat-button color="primary" type="button" [disabled]="!canAct(item) || processing()" (click)="approve(item)">Approve</button>
+              </div>
             </td>
           </ng-container>
           <tr mat-header-row *matHeaderRowDef="columns"></tr>

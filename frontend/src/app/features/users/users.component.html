@@ -1,0 +1,56 @@
+<section class="acr-page">
+  <acr-page-header title="Users" description="Manage platform and tenant operator accounts with role-aware permissions.">
+    <div class="header-actions">
+      <button mat-stroked-button type="button" (click)="loadUsers()" [disabled]="loading() || saving()">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="openCreateDialog()" [disabled]="saving() || (currentRole === 'SUPER_ADMIN' && tenants().length === 0)">
+        <mat-icon>add</mat-icon>
+        New user
+      </button>
+    </div>
+  </acr-page-header>
+
+  @if (error()) { <acr-error-state [message]="error()" /> }
+
+  <section class="acr-panel users-panel">
+    @if (loading()) {
+      <acr-loading-state label="Loading users" />
+    } @else if (users().length === 0) {
+      <acr-empty-state icon="group" title="No users found" message="Create operator accounts after tenant setup is ready." />
+    } @else {
+      <div class="table-wrap">
+        <table mat-table [dataSource]="users()">
+          <ng-container matColumnDef="user">
+            <th mat-header-cell *matHeaderCellDef>User</th>
+            <td mat-cell *matCellDef="let user"><div class="stacked"><strong>{{ user.firstName }} {{ user.lastName }}</strong><span>{{ user.email }}</span></div></td>
+          </ng-container>
+          <ng-container matColumnDef="role">
+            <th mat-header-cell *matHeaderCellDef>Role</th>
+            <td mat-cell *matCellDef="let user"><acr-status-badge [status]="user.role" /></td>
+          </ng-container>
+          <ng-container matColumnDef="tenant">
+            <th mat-header-cell *matHeaderCellDef>Tenant</th>
+            <td mat-cell *matCellDef="let user">{{ user.tenantName || 'Platform' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let user"><acr-status-badge [status]="user.active ? 'ACTIVE' : 'PASSIVE'" /></td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let user" class="actions-cell">
+              @if (canManageUser(user)) {
+                <button mat-icon-button type="button" matTooltip="Edit user" (click)="openEditDialog(user)"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button type="button" matTooltip="Deactivate user" (click)="deactivateUser(user)"><mat-icon>delete</mat-icon></button>
+              }
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="columns"></tr>
+          <tr mat-row *matRowDef="let row; columns: columns;"></tr>
+        </table>
+      </div>
+    }
+  </section>
+</section>

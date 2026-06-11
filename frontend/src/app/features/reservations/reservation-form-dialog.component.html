@@ -4,7 +4,7 @@
     <mat-form-field appearance="outline">
       <mat-label>Vehicle</mat-label>
       <mat-select formControlName="vehicleId">
-        @for (vehicle of data.vehicles; track vehicle.id) {
+        @for (vehicle of availableVehicles(); track vehicle.id) {
           <mat-option [value]="vehicle.id">{{ vehicle.brand }} {{ vehicle.model }} - {{ vehicle.plateNumber }}</mat-option>
         }
       </mat-select>
@@ -37,6 +37,17 @@
         <mat-label>Return date/time</mat-label>
         <input matInput type="datetime-local" formControlName="returnDateTime">
       </mat-form-field>
+      <div class="availability-action">
+        <button mat-stroked-button type="button" (click)="checkAvailability()" [disabled]="availabilityLoading()">
+          <mat-icon>event_available</mat-icon>
+          Check availability
+        </button>
+        @if (availabilityError()) {
+          <span>{{ availabilityError() }}</span>
+        } @else if (availableVehicles().length === 0) {
+          <span>No vehicles available for the selected period.</span>
+        }
+      </div>
       <mat-form-field appearance="outline">
         <mat-label>Insurance package id</mat-label>
         <input matInput type="number" formControlName="insurancePackageId" placeholder="Optional">
