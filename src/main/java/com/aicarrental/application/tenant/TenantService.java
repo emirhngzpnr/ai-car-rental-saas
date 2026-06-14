@@ -31,9 +31,14 @@ public class TenantService {
         if (tenantRepository.existsBySubDomain(request.subDomain())) {
             throw new BusinessException("Subdomain already exists");
         }
+        String slug = normalizeSlug(request.subDomain());
+        if (tenantRepository.existsBySlug(slug)) {
+            throw new BusinessException("Tenant slug already exists");
+        }
         Tenant tenant = Tenant.builder()
                 .companyName(request.companyName())
                 .subDomain(request.subDomain())
+                .slug(slug)
                 .email(request.email())
                 .phoneNumber(request.phoneNumber())
                 .active(true)
@@ -77,9 +82,14 @@ public class TenantService {
         if (tenantRepository.existsBySubDomainAndIdNot(request.subDomain(), id)) {
             throw new BusinessException("Subdomain already exists");
         }
+        String slug = normalizeSlug(request.subDomain());
+        if (tenantRepository.existsBySlugAndIdNot(slug, id)) {
+            throw new BusinessException("Tenant slug already exists");
+        }
 
         tenant.setCompanyName(request.companyName());
         tenant.setSubDomain(request.subDomain());
+        tenant.setSlug(slug);
         tenant.setEmail(request.email());
         tenant.setPhoneNumber(request.phoneNumber());
 
@@ -131,12 +141,25 @@ public class TenantService {
                 tenant.getId(),
                 tenant.getCompanyName(),
                 tenant.getSubDomain(),
+                tenant.getSlug(),
                 tenant.getActive(),
                 tenant.getEmail(),
                 tenant.getPhoneNumber(),
                 tenant.getCreatedAt(),
                 tenant.getUpdatedAt()
         );
+    }
+
+    private String normalizeSlug(String value) {
+        String normalized = value == null ? "" : value.trim().toLowerCase();
+        normalized = normalized.replaceAll("[^a-z0-9]+", "-");
+        normalized = normalized.replaceAll("(^-+|-+$)", "");
+
+        if (normalized.isBlank()) {
+            throw new BusinessException("Tenant slug cannot be empty");
+        }
+
+        return normalized;
     }
 
     }

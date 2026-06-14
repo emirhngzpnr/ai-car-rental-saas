@@ -24,6 +24,16 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
     Optional<Reservation> findByIdAndTenant_IdAndActiveTrue(Long id, Long tenantId);
 
+    Optional<Reservation> findByReservationCodeAndTenant_IdAndActiveTrue(String reservationCode, Long tenantId);
+
+    Optional<Reservation> findByReservationCodeAndCustomerEmailIgnoreCaseAndActiveTrue(String reservationCode, String customerEmail);
+
+    Optional<Reservation> findByReservationCodeAndTenant_IdAndCustomerEmailIgnoreCaseAndActiveTrue(
+            String reservationCode,
+            Long tenantId,
+            String customerEmail
+    );
+
     boolean existsByVehicle_IdAndActiveTrueAndStatusInAndPickupDateTimeLessThanAndReturnDateTimeGreaterThan(
             Long vehicleId,
             List<ReservationStatus> statuses,
@@ -49,6 +59,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         SELECT CASE WHEN COUNT(r) > 0 THEN true ELSE false END
         FROM Reservation r
         WHERE r.vehicle.id = :vehicleId
+          AND r.active = true
           AND r.status IN (
                          com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
                          com.aicarrental.domain.reservation.ReservationStatus.DEPOSIT_PAID,

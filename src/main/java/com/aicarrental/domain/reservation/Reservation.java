@@ -83,6 +83,9 @@ public class Reservation {
     @JoinColumn(name = "insurance_package_id")
     private InsurancePackage insurancePackage;
 
+    @Column(name = "reservation_code", unique = true, length = 50)
+    private String reservationCode;
+
     @Column(name = "insurance_package_name_snapshot", length = 100)
     private String insurancePackageNameSnapshot;
 
