@@ -27,5 +27,8 @@ public class Tenant {
     private String phoneNumber;
     private String email;
 
+    @Column(nullable = false, unique = true)
+    private String slug;
+
 
 }

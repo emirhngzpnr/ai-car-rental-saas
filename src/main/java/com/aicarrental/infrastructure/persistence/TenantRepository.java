@@ -11,7 +11,11 @@ import java.util.Optional;
 public interface    TenantRepository extends JpaRepository<Tenant, Long> {
     boolean existsBySubDomain(String subDomain);
     boolean existsBySubDomainAndIdNot(String subDomain, Long id);
+    boolean existsBySlug(String slug);
+    boolean existsBySlugAndIdNot(String slug, Long id);
     List<Tenant> findByActiveTrue();
 
     Optional<Tenant> findByIdAndActiveTrue(Long id);
+
+    Optional<Tenant> findBySlugAndActiveTrue(String slug);
 }

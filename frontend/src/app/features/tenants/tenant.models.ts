@@ -2,6 +2,7 @@ export interface TenantResponse {
   id: number;
   companyName: string;
   subDomain: string;
+  slug: string;
   active: boolean;
   email: string;
   phoneNumber: string;

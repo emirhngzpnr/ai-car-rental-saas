@@ -176,6 +176,8 @@ public class ReservationService {
 
         Reservation savedReservation =
                 reservationRepository.save(reservation);
+        savedReservation.setReservationCode(generateReservationCode(savedReservation));
+        savedReservation = reservationRepository.save(savedReservation);
         ReservationCreatedEvent event = new ReservationCreatedEvent(
                 savedReservation.getId(),
                 savedReservation.getTenant().getId(),
@@ -383,5 +385,12 @@ public class ReservationService {
                 reservation.getCreatedAt(),
                 reservation.getUpdatedAt()
         );
+    }
+
+    private String generateReservationCode(Reservation reservation) {
+        int year = reservation.getCreatedAt() != null
+                ? reservation.getCreatedAt().getYear()
+                : LocalDateTime.now().getYear();
+        return "RNT-" + year + "-" + String.format("%06d", reservation.getId());
     }
 }

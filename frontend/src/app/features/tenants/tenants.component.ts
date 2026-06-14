@@ -30,7 +30,7 @@ export class TenantsComponent implements OnInit {
   readonly saving = signal(false);
   readonly error = signal('');
   readonly tenants = signal<TenantResponse[]>([]);
-  readonly columns = ['tenant', 'contact', 'subDomain', 'status', 'actions'];
+  readonly columns = ['tenant', 'contact', 'subDomain', 'slug', 'status', 'actions'];
 
   ngOnInit(): void {
     this.loadTenants();
