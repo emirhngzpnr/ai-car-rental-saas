@@ -78,6 +78,25 @@ The frontend runs at `http://localhost:4200`.
 4. Create a reservation and complete the mock deposit payment.
 5. Track a guest reservation with its reservation code and email, or view account reservations.
 
+### AI vehicle search API
+
+The public AI interpreter converts Turkish or English natural-language requests into the same
+validated filters used by the deterministic marketplace search. It never returns or invents
+vehicles; clients apply the returned criteria to the regular availability endpoint.
+
+```http
+POST /api/public/marketplace/vehicle-search/interpret
+Content-Type: application/json
+
+{
+  "query": "2000-5000 TL arasi, otomatik ve gunluk en az 500 km arac"
+}
+```
+
+Pickup and return dates remain explicit marketplace inputs. The AI endpoint is limited through
+Redis to 10 requests per client per minute by default. Configure the limit with
+`AI_MARKETPLACE_RATE_LIMIT_MAX_REQUESTS` and `AI_MARKETPLACE_RATE_LIMIT_WINDOW_SECONDS`.
+
 ### Staff operations
 
 1. Open `/login` and authenticate as `SUPER_ADMIN`, `TENANT_ADMIN`, or `TENANT_STAFF`.
