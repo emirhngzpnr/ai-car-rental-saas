@@ -28,6 +28,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
+    private final CustomerJwtAuthenticationFilter customerJwtAuthenticationFilter;
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -50,12 +51,16 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/public/**",
                                 "/api/auth/**",
+                                "/api/customer/auth/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .anyRequest().authenticated()
-                ).addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                        .requestMatchers("/api/customer/**").hasRole("CUSTOMER")
+                        .anyRequest().hasAnyRole("SUPER_ADMIN", "TENANT_ADMIN", "TENANT_STAFF")
+                )
+                .addFilterBefore(customerJwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, CustomerJwtAuthenticationFilter.class);
         return http.build();
     }
     @Bean

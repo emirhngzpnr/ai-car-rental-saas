@@ -56,6 +56,24 @@ public class Vehicle {
     private BigDecimal dailyPrice;
 
     @Enumerated(EnumType.STRING)
+    private VehicleCategory category;
+
+    @Enumerated(EnumType.STRING)
+    private TransmissionType transmission;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fuel_type")
+    private FuelType fuelType;
+
+    @Column(name = "seat_count")
+    private Integer seatCount;
+
+    private String location;
+
+    @Column(name = "image_url", length = 1000)
+    private String imageUrl;
+
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private VehicleStatus status;
 

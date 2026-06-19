@@ -9,6 +9,7 @@ import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.event.PaymentCompletedEvent;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.domain.outbox.OutboxEventType;
+import com.aicarrental.domain.customer.CustomerAccount;
 import com.aicarrental.domain.payment.PaymentStatus;
 import com.aicarrental.domain.payment.PaymentTransaction;
 import com.aicarrental.domain.payment.PaymentType;
@@ -43,6 +44,23 @@ public class PublicPaymentService {
                 request.email()
         );
 
+        return completeDeposit(reservation, request.idempotencyKey());
+    }
+
+    public PublicDepositPaymentResponse payDepositForCustomer(
+            CustomerAccount customer,
+            String reservationCode,
+            String idempotencyKey
+    ) {
+        Reservation reservation = reservationRepository
+                .findByReservationCodeAndCustomerAccount_IdAndActiveTrue(reservationCode, customer.getId())
+                .orElseThrow(() -> new com.aicarrental.common.exception.ResourceNotFoundException("Reservation not found"));
+
+        return completeDeposit(reservation, idempotencyKey);
+    }
+
+    private PublicDepositPaymentResponse completeDeposit(Reservation reservation, String idempotencyKey) {
+
         if (reservation.getStatus() != ReservationStatus.PENDING_PAYMENT) {
             throw new BusinessException("Deposit payment can only be completed for pending payment reservations");
         }
@@ -55,7 +73,7 @@ public class PublicPaymentService {
             throw new BusinessException("Deposit payment already completed for this reservation");
         }
 
-        paymentTransactionRepository.findByIdempotencyKey(request.idempotencyKey())
+        paymentTransactionRepository.findByIdempotencyKey(idempotencyKey)
                 .ifPresent(existing -> {
                     throw new BusinessException("Idempotency key already used");
                 });
@@ -69,7 +87,7 @@ public class PublicPaymentService {
                 .amount(reservation.getDepositAmount())
                 .currency("TRY")
                 .providerTransactionId("MOCK-PUBLIC-" + System.currentTimeMillis())
-                .idempotencyKey(request.idempotencyKey())
+                .idempotencyKey(idempotencyKey)
                 .createdAt(now)
                 .updatedAt(now)
                 .build();

@@ -5,12 +5,15 @@ import com.aicarrental.domain.vehicle.Vehicle;
 import com.aicarrental.domain.vehicle.VehicleStatus;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 /**
@@ -74,6 +77,54 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
      * and prevents cross-tenant data access vulnerabilities.
      */
     Optional<Vehicle> findByIdAndTenant_IdAndActiveTrue(Long id, Long tenantId);
+
+    Optional<Vehicle> findByIdAndActiveTrueAndTenant_ActiveTrue(Long id);
+
+    @Query("""
+        SELECT v
+        FROM Vehicle v
+        WHERE v.active = true
+          AND v.tenant.active = true
+          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+          AND (:minDailyPrice IS NULL OR v.dailyPrice >= :minDailyPrice)
+          AND (:maxDailyPrice IS NULL OR v.dailyPrice <= :maxDailyPrice)
+          AND (:minDailyKmLimit IS NULL OR v.dailyKmLimit >= :minDailyKmLimit)
+          AND (:brand = '' OR LOWER(v.brand) LIKE CONCAT('%', :brand, '%'))
+          AND (:model = '' OR LOWER(v.model) LIKE CONCAT('%', :model, '%'))
+          AND (:category IS NULL OR v.category = :category)
+          AND (:transmission IS NULL OR v.transmission = :transmission)
+          AND (:fuelType IS NULL OR v.fuelType = :fuelType)
+          AND (:minSeats IS NULL OR v.seatCount >= :minSeats)
+          AND (:location = '' OR LOWER(v.location) LIKE CONCAT('%', :location, '%'))
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Reservation r
+              WHERE r.vehicle.id = v.id
+                AND r.active = true
+                AND r.status IN (
+                    com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
+                    com.aicarrental.domain.reservation.ReservationStatus.DEPOSIT_PAID,
+                    com.aicarrental.domain.reservation.ReservationStatus.CONFIRMED
+                )
+                AND r.pickupDateTime < :returnDateTime
+                AND r.returnDateTime > :pickupDateTime
+          )
+        """)
+    Page<Vehicle> searchPublicMarketplace(
+            @Param("pickupDateTime") LocalDateTime pickupDateTime,
+            @Param("returnDateTime") LocalDateTime returnDateTime,
+            @Param("minDailyPrice") BigDecimal minDailyPrice,
+            @Param("maxDailyPrice") BigDecimal maxDailyPrice,
+            @Param("minDailyKmLimit") Integer minDailyKmLimit,
+            @Param("brand") String brand,
+            @Param("model") String model,
+            @Param("category") com.aicarrental.domain.vehicle.VehicleCategory category,
+            @Param("transmission") com.aicarrental.domain.vehicle.TransmissionType transmission,
+            @Param("fuelType") com.aicarrental.domain.vehicle.FuelType fuelType,
+            @Param("minSeats") Integer minSeats,
+            @Param("location") String location,
+            Pageable pageable
+    );
 
     @Query("""
         SELECT v

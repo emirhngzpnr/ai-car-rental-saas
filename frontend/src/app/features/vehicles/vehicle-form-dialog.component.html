@@ -31,6 +31,46 @@
       </mat-form-field>
 
       <mat-form-field appearance="outline">
+        <mat-label>Category</mat-label>
+        <mat-select formControlName="category">
+          <mat-option [value]="null">Not specified</mat-option>
+          @for (category of categories; track category) { <mat-option [value]="category">{{ category }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Transmission</mat-label>
+        <mat-select formControlName="transmission">
+          <mat-option [value]="null">Not specified</mat-option>
+          @for (transmission of transmissions; track transmission) { <mat-option [value]="transmission">{{ transmission }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Fuel type</mat-label>
+        <mat-select formControlName="fuelType">
+          <mat-option [value]="null">Not specified</mat-option>
+          @for (fuelType of fuelTypes; track fuelType) { <mat-option [value]="fuelType">{{ fuelType }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Seat count</mat-label>
+        <input matInput type="number" formControlName="seatCount">
+        @if (form.controls.seatCount.hasError('min')) { <mat-error>Seat count must be at least 1</mat-error> }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Pickup location</mat-label>
+        <input matInput formControlName="location">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Image URL</mat-label>
+        <input matInput type="url" formControlName="imageUrl">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
         <mat-label>Production year</mat-label>
         <input matInput type="number" formControlName="productionYear">
         @if (form.controls.productionYear.hasError('min')) { <mat-error>Production year must be 2000 or newer</mat-error> }

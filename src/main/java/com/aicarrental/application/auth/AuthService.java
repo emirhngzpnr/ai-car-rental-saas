@@ -38,6 +38,10 @@ public class AuthService {
                     return new BusinessException("Invalid email or password");
                 });
 
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            throw new BusinessException("Invalid email or password");
+        }
+
         boolean passwordMatches = passwordEncoder.matches(
                 request.password(),
                 user.getPasswordHash()

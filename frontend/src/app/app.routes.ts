@@ -8,12 +8,36 @@ import { VehiclesComponent } from './features/vehicles/vehicles.component';
 import { ReservationsComponent } from './features/reservations/reservations.component';
 import { RentalsComponent } from './features/rentals/rentals.component';
 import { PaymentsComponent } from './features/payments/payments.component';
+import { CustomerShellComponent } from './layout/customer-shell/customer-shell.component';
+import { customerAuthGuard } from './core/customer-auth/customer-auth.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then((component) => component.LoginComponent),
     canActivate: [guestGuard]
+  },
+  {
+    path: 'rent',
+    component: CustomerShellComponent,
+    children: [
+      { path: '', loadComponent: () => import('./features/marketplace/marketplace-search.component').then(c => c.MarketplaceSearchComponent) },
+      { path: 'vehicles/:vehicleId', loadComponent: () => import('./features/marketplace/marketplace-detail.component').then(c => c.MarketplaceDetailComponent) },
+      { path: 'checkout/:vehicleId', loadComponent: () => import('./features/marketplace/marketplace-checkout.component').then(c => c.MarketplaceCheckoutComponent) },
+      { path: 'reservation/success', loadComponent: () => import('./features/marketplace/reservation-success.component').then(c => c.ReservationSuccessComponent) },
+      { path: 'track', loadComponent: () => import('./features/marketplace/reservation-tracking.component').then(c => c.ReservationTrackingComponent) }
+    ]
+  },
+  {
+    path: 'customer',
+    component: CustomerShellComponent,
+    children: [
+      { path: 'login', data: { mode: 'login' }, loadComponent: () => import('./features/customer-account/customer-access.component').then(c => c.CustomerAccessComponent) },
+      { path: 'register', data: { mode: 'register' }, loadComponent: () => import('./features/customer-account/customer-access.component').then(c => c.CustomerAccessComponent) },
+      { path: 'account/profile', canActivate: [customerAuthGuard], loadComponent: () => import('./features/customer-account/customer-profile.component').then(c => c.CustomerProfileComponent) },
+      { path: 'account/reservations', canActivate: [customerAuthGuard], loadComponent: () => import('./features/customer-account/customer-reservations.component').then(c => c.CustomerReservationsComponent) },
+      { path: 'account/reservations/:reservationCode', canActivate: [customerAuthGuard], loadComponent: () => import('./features/customer-account/customer-reservation-detail.component').then(c => c.CustomerReservationDetailComponent) }
+    ]
   },
   {
     path: 'app',
@@ -68,6 +92,6 @@ export const routes: Routes = [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' }
     ]
   },
-  { path: '', pathMatch: 'full', redirectTo: 'app/dashboard' },
-  { path: '**', redirectTo: 'app/dashboard' }
+  { path: '', pathMatch: 'full', redirectTo: 'rent' },
+  { path: '**', redirectTo: 'rent' }
 ];

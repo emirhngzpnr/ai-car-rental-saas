@@ -34,6 +34,13 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             String customerEmail
     );
 
+    List<Reservation> findByCustomerAccount_IdAndActiveTrueOrderByCreatedAtDesc(Long customerAccountId);
+
+    Optional<Reservation> findByReservationCodeAndCustomerAccount_IdAndActiveTrue(
+            String reservationCode,
+            Long customerAccountId
+    );
+
     boolean existsByVehicle_IdAndActiveTrueAndStatusInAndPickupDateTimeLessThanAndReturnDateTimeGreaterThan(
             Long vehicleId,
             List<ReservationStatus> statuses,
