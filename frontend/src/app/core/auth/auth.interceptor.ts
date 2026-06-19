@@ -5,6 +5,10 @@ import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
+  if (request.url.includes('/api/public/') || request.url.includes('/api/customer/')) {
+    return next(request);
+  }
+
   const authService = inject(AuthService);
   const router = inject(Router);
   const session = authService.session();

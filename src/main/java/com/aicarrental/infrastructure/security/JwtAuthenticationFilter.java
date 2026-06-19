@@ -22,6 +22,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/api/customer/");
+    }
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -41,11 +46,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
+        String principalType = jwtService.extractPrincipalType(token);
+        if (principalType != null && !"STAFF".equals(principalType)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         String email = jwtService.extractEmail(token);
 
         User user = userRepository.findByEmail(email).orElse(null);
 
-        if (user != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        if (user != null && Boolean.TRUE.equals(user.getActive())
+                && SecurityContextHolder.getContext().getAuthentication() == null) {
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
                             user,

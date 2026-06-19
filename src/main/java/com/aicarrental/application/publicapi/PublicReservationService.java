@@ -11,6 +11,7 @@ import com.aicarrental.common.event.ReservationCreatedEvent;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.domain.insurance.InsurancePackage;
+import com.aicarrental.domain.customer.CustomerAccount;
 import com.aicarrental.domain.outbox.OutboxEventType;
 import com.aicarrental.domain.reservation.Reservation;
 import com.aicarrental.domain.reservation.ReservationStatus;
@@ -43,6 +44,22 @@ public class PublicReservationService {
     private final AuditEventPublisher auditEventPublisher;
 
     public PublicReservationResponse createReservation(String tenantSlug, PublicCreateReservationRequest request) {
+        return createReservationInternal(tenantSlug, request, null);
+    }
+
+    public PublicReservationResponse createReservationForCustomer(
+            String tenantSlug,
+            PublicCreateReservationRequest request,
+            CustomerAccount customerAccount
+    ) {
+        return createReservationInternal(tenantSlug, request, customerAccount);
+    }
+
+    private PublicReservationResponse createReservationInternal(
+            String tenantSlug,
+            PublicCreateReservationRequest request,
+            CustomerAccount customerAccount
+    ) {
         PublicVehicleService.validateDateRange(request.pickupDateTime(), request.returnDateTime());
         Tenant tenant = publicTenantService.findActiveTenant(tenantSlug);
 
@@ -96,6 +113,7 @@ public class PublicReservationService {
                 .dailyKmLimitSnapshot(vehicle.getDailyKmLimit())
                 .extraKmPricePerKmSnapshot(vehicle.getExtraKmPricePerKm())
                 .insurancePackage(insurancePackage)
+                .customerAccount(customerAccount)
                 .insurancePackageNameSnapshot(insurancePackage != null ? insurancePackage.getName() : null)
                 .insurancePackageTypeSnapshot(insurancePackage != null ? insurancePackage.getType().name() : null)
                 .insuranceDailyPriceSnapshot(insurancePackage != null ? insurancePackage.getDailyPrice() : null)

@@ -34,6 +34,7 @@ public class VehicleService {
 
     public VehicleResponse createVehicle(CreateVehicleRequest request) {
         User currentUser = currentUserService.getCurrentUser();
+        validateImageUrl(request.imageUrl());
 
         Tenant currentTenant = currentUser.getTenant();
 
@@ -56,6 +57,12 @@ public class VehicleService {
                 .dailyPrice(request.dailyPrice())
                 .dailyKmLimit(request.dailyKmLimit())
                 .extraKmPricePerKm(request.extraKmPricePerKm())
+                .category(request.category())
+                .transmission(request.transmission())
+                .fuelType(request.fuelType())
+                .seatCount(request.seatCount())
+                .location(request.location())
+                .imageUrl(normalizeOptional(request.imageUrl()))
                 .status(request.status())
                 .active(true)
                 .tenant(currentTenant)
@@ -99,6 +106,7 @@ public class VehicleService {
     }
     public VehicleResponse updateVehicle(Long id, UpdateVehicleRequest request) {
         User currentUser = currentUserService.getCurrentUser();
+        validateImageUrl(request.imageUrl());
 
         Vehicle vehicle = findVehicleByIdWithTenantIsolation(id);
 
@@ -114,6 +122,12 @@ public class VehicleService {
         vehicle.setDailyPrice(request.dailyPrice());
         vehicle.setDailyKmLimit(request.dailyKmLimit());
         vehicle.setExtraKmPricePerKm(request.extraKmPricePerKm());
+        vehicle.setCategory(request.category());
+        vehicle.setTransmission(request.transmission());
+        vehicle.setFuelType(request.fuelType());
+        vehicle.setSeatCount(request.seatCount());
+        vehicle.setLocation(request.location());
+        vehicle.setImageUrl(normalizeOptional(request.imageUrl()));
         vehicle.setStatus(request.status());
         vehicle.setActive(request.active());
         vehicle.setUpdatedAt(LocalDateTime.now());
@@ -210,6 +224,12 @@ public class VehicleService {
                 vehicle.getDailyPrice(),
                 vehicle.getDailyKmLimit(),
                 vehicle.getExtraKmPricePerKm(),
+                vehicle.getCategory() != null ? vehicle.getCategory().name() : null,
+                vehicle.getTransmission() != null ? vehicle.getTransmission().name() : null,
+                vehicle.getFuelType() != null ? vehicle.getFuelType().name() : null,
+                vehicle.getSeatCount(),
+                vehicle.getLocation(),
+                vehicle.getImageUrl(),
                 vehicle.getStatus().name(),
                 vehicle.getActive(),
                 vehicle.getTenant() != null ? vehicle.getTenant().getId() : null,
@@ -230,6 +250,17 @@ public class VehicleService {
 
         return vehicleRepository.findByIdAndTenant_IdAndActiveTrue(vehicleId, tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found"));
+    }
+
+    private void validateImageUrl(String imageUrl) {
+        if (imageUrl != null && !imageUrl.isBlank()
+                && !imageUrl.matches("^https?://.+")) {
+            throw new BusinessException("Image URL must use HTTP or HTTPS");
+        }
+    }
+
+    private String normalizeOptional(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
 }

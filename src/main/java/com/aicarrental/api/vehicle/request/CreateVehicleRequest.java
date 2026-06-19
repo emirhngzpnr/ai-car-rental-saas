@@ -1,6 +1,9 @@
 package com.aicarrental.api.vehicle.request;
 
 import com.aicarrental.domain.vehicle.VehicleStatus;
+import com.aicarrental.domain.vehicle.VehicleCategory;
+import com.aicarrental.domain.vehicle.TransmissionType;
+import com.aicarrental.domain.vehicle.FuelType;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -38,5 +41,15 @@ public record CreateVehicleRequest(@NotBlank(message = "Brand is required")
                                    BigDecimal extraKmPricePerKm,
 
                                    @NotNull(message = "Vehicle status is required")
-                                   VehicleStatus status) {
+                                   VehicleStatus status,
+
+                                   VehicleCategory category,
+                                   TransmissionType transmission,
+                                   FuelType fuelType,
+
+                                   @Min(value = 1, message = "Seat count must be at least 1")
+                                   Integer seatCount,
+
+                                   String location,
+                                   String imageUrl) {
 }

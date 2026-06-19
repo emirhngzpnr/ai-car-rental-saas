@@ -4,6 +4,7 @@ package com.aicarrental.domain.reservation;
 import com.aicarrental.domain.insurance.InsurancePackage;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.domain.vehicle.Vehicle;
+import com.aicarrental.domain.customer.CustomerAccount;
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
@@ -82,6 +83,10 @@ public class Reservation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "insurance_package_id")
     private InsurancePackage insurancePackage;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_account_id")
+    private CustomerAccount customerAccount;
 
     @Column(name = "reservation_code", unique = true, length = 50)
     private String reservationCode;

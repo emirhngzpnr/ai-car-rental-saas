@@ -1,6 +1,7 @@
 package com.aicarrental.infrastructure.security;
 
 import com.aicarrental.domain.auth.User;
+import com.aicarrental.domain.customer.CustomerAccount;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -32,10 +33,25 @@ public class JwtService {
                 .claim("userId", user.getId())
                 .claim("role", user.getRole().name())
                 .claim("tenantId", tenantId)
+                .claim("principalType", "STAFF")
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                     .compact();
+    }
+
+    public String generateCustomerToken(CustomerAccount customer) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
+
+        return Jwts.builder()
+                .setSubject(customer.getEmail())
+                .claim("customerId", customer.getId())
+                .claim("principalType", "CUSTOMER")
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     private Key getSigningKey() {
@@ -46,6 +62,10 @@ public class JwtService {
 
     public String extractEmail(String token) {
         return extractAllClaims(token).getSubject();
+    }
+
+    public String extractPrincipalType(String token) {
+        return extractAllClaims(token).get("principalType", String.class);
     }
 
     public boolean isTokenValid(String token) {
