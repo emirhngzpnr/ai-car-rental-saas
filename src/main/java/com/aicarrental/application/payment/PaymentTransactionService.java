@@ -23,6 +23,7 @@ import com.aicarrental.infrastructure.persistence.ReservationRepository;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -47,19 +48,28 @@ public class PaymentTransactionService {
     }
 
     private PaymentTransactionResponse createNewPayment(CreatePaymentRequest request) {
+        User currentUser = currentUserService.getCurrentUser();
+        Long tenantId = currentUserService.isSuperAdmin(currentUser)
+                ? request.tenantId()
+                : currentUserService.getCurrentTenantId();
 
-        Tenant tenant = tenantRepository.findById(request.tenantId())
+        if (!currentUserService.isSuperAdmin(currentUser)
+                && request.tenantId() != null
+                && !request.tenantId().equals(tenantId)) {
+            throw new BusinessException("Payment tenant does not match authenticated tenant");
+        }
+
+        Tenant tenant = tenantRepository.findById(tenantId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tenant not found"));
 
         Reservation reservation = null;
 
         if (request.reservationId() != null) {
-            reservation = reservationRepository.findById(request.reservationId())
+            reservation = reservationRepository.findReservationByIdAndTenantIdForUpdate(
+                            request.reservationId(),
+                            tenant.getId()
+                    )
                     .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
-
-            if (!reservation.getTenant().getId().equals(tenant.getId())) {
-                throw new BusinessException("Reservation does not belong to tenant");
-            }
         }
         if (request.paymentType() == PaymentType.DEPOSIT_PAYMENT && reservation == null) {
             throw new BusinessException("Deposit payment must be linked to a reservation");
@@ -92,7 +102,12 @@ public class PaymentTransactionService {
                 .updatedAt(now)
                 .build();
 
-        PaymentTransaction saved = paymentTransactionRepository.save(paymentTransaction);
+        PaymentTransaction saved;
+        try {
+            saved = paymentTransactionRepository.saveAndFlush(paymentTransaction);
+        } catch (DataIntegrityViolationException exception) {
+            throw new BusinessException("Payment transaction already exists");
+        }
 
         if (saved.getPaymentType() == PaymentType.DEPOSIT_PAYMENT
                 && saved.getPaymentStatus() == PaymentStatus.SUCCESS
@@ -105,8 +120,6 @@ public class PaymentTransactionService {
 
             reservationRepository.save(paidReservation);
         }
-
-        User currentUser = currentUserService.getCurrentUser();
 
         auditEventPublisher.publish(new AuditEvent(
                 currentUser.getId(),
