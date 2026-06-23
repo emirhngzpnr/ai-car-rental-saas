@@ -32,6 +32,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -268,7 +269,7 @@ public class AiPricingService {
             Long vehicleId,
             AiPricingRecommendationResponse response
     ) {
-        Vehicle vehicle = vehicleRepository.findById(vehicleId)
+        Vehicle vehicle = vehicleRepository.findByIdAndTenant_IdAndActiveTrue(vehicleId, tenantId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Vehicle not found")
                 );
@@ -313,6 +314,7 @@ public class AiPricingService {
                 .map(this::mapToManagementResponse)
                 .toList();
     }
+    @Transactional
     public AiPricingRecommendationManagementResponse approveRecommendation(
             Long recommendationId
     ) {
@@ -334,6 +336,7 @@ public class AiPricingService {
         }
 
         Vehicle vehicle = recommendation.getVehicle();
+        BigDecimal oldPrice = vehicle.getDailyPrice();
 
         vehicle.setDailyPrice(recommendation.getRecommendedPrice());
         vehicle.setUpdatedAt(LocalDateTime.now());
@@ -343,7 +346,6 @@ public class AiPricingService {
         recommendation.setStatus(AiPricingRecommendationStatus.APPROVED);
         recommendation.setApprovedBy(currentUser);
         recommendation.setApprovedAt(LocalDateTime.now());
-        BigDecimal oldPrice = vehicle.getDailyPrice();
         AiPricingRecommendation saved =
                 aiPricingRecommendationRepository.save(recommendation);
         auditEventPublisher.publish(new AuditEvent(

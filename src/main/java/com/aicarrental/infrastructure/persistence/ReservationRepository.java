@@ -34,6 +34,47 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             String customerEmail
     );
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT r
+        FROM Reservation r
+        WHERE r.id = :reservationId
+          AND r.tenant.id = :tenantId
+          AND r.active = true
+        """)
+    Optional<Reservation> findReservationByIdAndTenantIdForUpdate(
+            @Param("reservationId") Long reservationId,
+            @Param("tenantId") Long tenantId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT r
+        FROM Reservation r
+        WHERE r.reservationCode = :reservationCode
+          AND r.tenant.id = :tenantId
+          AND LOWER(r.customerEmail) = LOWER(:customerEmail)
+          AND r.active = true
+        """)
+    Optional<Reservation> findPublicReservationForPaymentForUpdate(
+            @Param("reservationCode") String reservationCode,
+            @Param("tenantId") Long tenantId,
+            @Param("customerEmail") String customerEmail
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT r
+        FROM Reservation r
+        WHERE r.reservationCode = :reservationCode
+          AND r.customerAccount.id = :customerAccountId
+          AND r.active = true
+        """)
+    Optional<Reservation> findCustomerReservationForPaymentForUpdate(
+            @Param("reservationCode") String reservationCode,
+            @Param("customerAccountId") Long customerAccountId
+    );
+
     List<Reservation> findByCustomerAccount_IdAndActiveTrueOrderByCreatedAtDesc(Long customerAccountId);
 
     Optional<Reservation> findByReservationCodeAndCustomerAccount_IdAndActiveTrue(

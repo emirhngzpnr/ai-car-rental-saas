@@ -173,6 +173,17 @@ public class PublicReservationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
     }
 
+    Reservation findPublicReservationForPaymentForUpdate(String tenantSlug, String reservationCode, String email) {
+        Tenant tenant = publicTenantService.findActiveTenant(tenantSlug);
+        return reservationRepository
+                .findPublicReservationForPaymentForUpdate(
+                        reservationCode,
+                        tenant.getId(),
+                        email
+                )
+                .orElseThrow(() -> new ResourceNotFoundException("Reservation not found"));
+    }
+
     PublicReservationResponse mapReservation(Reservation reservation) {
         return new PublicReservationResponse(
                 reservation.getReservationCode(),

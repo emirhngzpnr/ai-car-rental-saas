@@ -19,6 +19,7 @@ import com.aicarrental.infrastructure.persistence.PaymentTransactionRepository;
 import com.aicarrental.infrastructure.persistence.ReservationRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -38,7 +39,7 @@ public class PublicPaymentService {
             String reservationCode,
             PublicDepositPaymentRequest request
     ) {
-        Reservation reservation = publicReservationService.findPublicReservationForPayment(
+        Reservation reservation = publicReservationService.findPublicReservationForPaymentForUpdate(
                 tenantSlug,
                 reservationCode,
                 request.email()
@@ -53,7 +54,7 @@ public class PublicPaymentService {
             String idempotencyKey
     ) {
         Reservation reservation = reservationRepository
-                .findByReservationCodeAndCustomerAccount_IdAndActiveTrue(reservationCode, customer.getId())
+                .findCustomerReservationForPaymentForUpdate(reservationCode, customer.getId())
                 .orElseThrow(() -> new com.aicarrental.common.exception.ResourceNotFoundException("Reservation not found"));
 
         return completeDeposit(reservation, idempotencyKey);
@@ -92,7 +93,12 @@ public class PublicPaymentService {
                 .updatedAt(now)
                 .build();
 
-        PaymentTransaction savedPayment = paymentTransactionRepository.save(paymentTransaction);
+        PaymentTransaction savedPayment;
+        try {
+            savedPayment = paymentTransactionRepository.saveAndFlush(paymentTransaction);
+        } catch (DataIntegrityViolationException exception) {
+            throw new BusinessException("Deposit payment already completed for this reservation");
+        }
 
         reservation.setStatus(ReservationStatus.DEPOSIT_PAID);
         reservation.setUpdatedAt(LocalDateTime.now());
