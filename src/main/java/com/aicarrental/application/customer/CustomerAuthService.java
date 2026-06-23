@@ -41,7 +41,7 @@ public class CustomerAuthService {
                 .updatedAt(now)
                 .build());
 
-        return response(account);
+        return createAuthResponse(account);
     }
 
     public CustomerAuthResponse login(CustomerLoginRequest request) {
@@ -50,10 +50,10 @@ public class CustomerAuthService {
         if (!passwordEncoder.matches(request.password(), account.getPasswordHash())) {
             throw new BusinessException("Invalid email or password");
         }
-        return response(account);
+        return createAuthResponse(account);
     }
 
-    private CustomerAuthResponse response(CustomerAccount account) {
+    public CustomerAuthResponse createAuthResponse(CustomerAccount account) {
         return new CustomerAuthResponse(
                 jwtService.generateCustomerToken(account),
                 "Bearer",

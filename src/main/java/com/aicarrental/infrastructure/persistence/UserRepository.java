@@ -21,5 +21,6 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
     List<User> findByActiveTrue();
 
+    @EntityGraph(attributePaths = "tenant")
     Optional<User> findByIdAndActiveTrue(Long id);
 }
