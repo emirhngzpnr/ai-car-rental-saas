@@ -41,6 +41,10 @@ Compose also uses the same file for PostgreSQL configuration.
 Generate a JWT secret containing at least 32 random bytes and store its Base64 representation in
 `JWT_SECRET`. Never commit real credentials or API keys.
 
+Set `SPRING_PROFILES_ACTIVE=local` for local development if you want demo seed data. Production
+deployments must set an explicit non-local profile and must not rely on a default `dev` profile.
+Set `CORS_ALLOWED_ORIGINS` to the exact frontend origin for the target environment.
+
 ## Run Locally
 
 Start PostgreSQL, Kafka, Kafka UI, and Redis:
@@ -55,7 +59,7 @@ Start the backend from the repository root:
 .\mvnw.cmd spring-boot:run
 ```
 
-The backend runs at `http://localhost:8080`. Swagger UI is available at
+The local backend runs at `http://localhost:8080`. Swagger UI is available at
 `http://localhost:8080/swagger-ui/index.html`, and Kafka UI at `http://localhost:8085`.
 
 Start the Angular frontend in a second terminal:
