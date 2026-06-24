@@ -15,6 +15,8 @@ public record VehicleSearchAiResult(
         Integer minSeats,
         String location,
         String sort,
+        String priceIntent,
+        String segmentIntent,
         String summary,
         List<String> warnings
 ) {

@@ -1,0 +1,237 @@
+<section class="marketplace-page">
+  <div class="page-heading">
+    <div>
+      <h1>Find an available car</h1>
+      <p>Compare live availability and rental terms across verified rental companies.</p>
+    </div>
+    <a mat-stroked-button routerLink="/rent/track">
+      <svg lucideSearch [size]="17"></svg>
+      Track booking
+    </a>
+  </div>
+
+  <form class="search-panel" [formGroup]="form" (ngSubmit)="search(0)">
+    <section class="semantic-search" aria-labelledby="semantic-search-title">
+      <div class="semantic-copy">
+        <div class="semantic-title" id="semantic-search-title">
+          <svg lucideSparkles [size]="18"></svg>
+          <strong>Describe the car you need</strong>
+        </div>
+        <span>Use everyday language. Dates stay under your control.</span>
+      </div>
+      <div class="semantic-input">
+        <mat-form-field appearance="outline">
+          <mat-label>Vehicle preferences</mat-label>
+          <input
+            matInput
+            formControlName="aiQuery"
+            placeholder="Not too expensive, mid-range, at least 500 km per day"
+            maxlength="500"
+          >
+        </mat-form-field>
+        <button mat-flat-button color="primary" type="button" (click)="applyAiFilters()" [disabled]="aiLoading()">
+          <svg lucideSparkles [size]="17"></svg>
+          {{ aiLoading() ? 'Interpreting...' : 'Apply AI filters' }}
+        </button>
+      </div>
+
+      @if (aiError()) {
+        <div class="ai-message ai-message--error">
+          <svg lucideCircleAlert [size]="18"></svg>
+          <span>{{ aiError() }}</span>
+        </div>
+      }
+      @if (aiSummary() || appliedAiFilters().length || aiInferences().length || aiWarnings().length) {
+        <div class="ai-result">
+          <div class="ai-result-head">
+            <div>
+              <strong>{{ aiSummary() }}</strong>
+              <span>These filters are editable below.</span>
+            </div>
+            <button type="button" class="icon-button" (click)="clearAiInterpretation()" aria-label="Clear AI interpretation">
+              <svg lucideX [size]="17"></svg>
+            </button>
+          </div>
+          @if (appliedAiFilters().length) {
+            <div class="filter-chips" aria-label="Applied AI filters">
+              @for (filter of appliedAiFilters(); track filter) {
+                <span>{{ filter }}</span>
+              }
+            </div>
+          }
+          @if (aiInferences().length) {
+            <ul class="ai-notes">
+              @for (inference of aiInferences(); track inference) {
+                <li>{{ inference }}</li>
+              }
+            </ul>
+          }
+          @if (aiWarnings().length) {
+            <div class="ai-warnings">
+              @for (warning of aiWarnings(); track warning) {
+                <span>{{ warning }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <div class="primary-search">
+      <div class="date-time-group">
+        <mat-form-field appearance="outline">
+          <mat-label>Pickup date</mat-label>
+          <input matInput [matDatepicker]="pickupPicker" [min]="today" formControlName="pickupDate" readonly>
+          <mat-datepicker-toggle matIconSuffix [for]="pickupPicker"></mat-datepicker-toggle>
+          <mat-datepicker #pickupPicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Time</mat-label>
+          <mat-select formControlName="pickupTime">
+            @for (time of timeOptions; track time) {
+              <mat-option [value]="time">{{ time }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="date-time-group">
+        <mat-form-field appearance="outline">
+          <mat-label>Return date</mat-label>
+          <input matInput [matDatepicker]="returnPicker" [min]="form.controls.pickupDate.value || today" formControlName="returnDate" readonly>
+          <mat-datepicker-toggle matIconSuffix [for]="returnPicker"></mat-datepicker-toggle>
+          <mat-datepicker #returnPicker></mat-datepicker>
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Time</mat-label>
+          <mat-select formControlName="returnTime">
+            @for (time of timeOptions; track time) {
+              <mat-option [value]="time">{{ time }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <mat-form-field appearance="outline">
+        <mat-label>Location</mat-label>
+        <input matInput formControlName="location" placeholder="City or branch">
+      </mat-form-field>
+      <button mat-flat-button color="primary" type="submit" [disabled]="loading()">
+        <svg lucideSearch [size]="18"></svg>
+        Search
+      </button>
+    </div>
+
+    <div class="filters">
+      <mat-form-field appearance="outline">
+        <mat-label>Min price</mat-label>
+        <input matInput type="number" formControlName="minDailyPrice">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Max price</mat-label>
+        <input matInput type="number" formControlName="maxDailyPrice">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Min daily km</mat-label>
+        <input matInput type="number" formControlName="minDailyKmLimit">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Brand</mat-label>
+        <input matInput formControlName="brand">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Categories</mat-label>
+        <mat-select formControlName="categories" multiple>
+          @for (category of categories; track category) {
+            <mat-option [value]="category">{{ category }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Transmission</mat-label>
+        <mat-select formControlName="transmission">
+          <mat-option value="">All</mat-option>
+          <mat-option value="AUTOMATIC">Automatic</mat-option>
+          <mat-option value="MANUAL">Manual</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Fuel</mat-label>
+        <mat-select formControlName="fuelType">
+          <mat-option value="">All</mat-option>
+          @for (fuel of fuels; track fuel) {
+            <mat-option [value]="fuel">{{ fuel }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Min seats</mat-label>
+        <input matInput type="number" formControlName="minSeats">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Sort</mat-label>
+        <mat-select formControlName="sort">
+          <mat-option value="recommended">Recommended</mat-option>
+          <mat-option value="priceAsc">Price low to high</mat-option>
+          <mat-option value="priceDesc">Price high to low</mat-option>
+          <mat-option value="kmLimitDesc">Highest km limit</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </form>
+
+  @if (error()) {
+    <div class="state error">
+      <svg lucideCircleAlert [size]="22"></svg>
+      <div><strong>Search could not be completed</strong><span>{{ error() }}</span></div>
+    </div>
+  }
+  @if (loading()) {
+    <div class="state">
+      <svg lucideClock [size]="22"></svg>
+      <span>Checking live vehicle availability...</span>
+    </div>
+  } @else if (!error()) {
+    <div class="results-heading">
+      <div><strong>{{ total() }} vehicles available</strong><span>Prices shown per day</span></div>
+    </div>
+    @if (vehicles().length === 0) {
+      <div class="state">
+        <svg lucideCar [size]="25"></svg>
+        <div><strong>No matching vehicles</strong><span>Try a wider date range or fewer filters.</span></div>
+      </div>
+    }
+    <div class="vehicle-grid">
+      @for (vehicle of vehicles(); track vehicle.vehicleId) {
+        <article class="vehicle-card">
+          <div class="vehicle-media">
+            @if (vehicle.imageUrl) {
+              <img [src]="vehicle.imageUrl" [alt]="vehicle.brand + ' ' + vehicle.model">
+            } @else {
+              <svg lucideCar [size]="50" [strokeWidth]="1.5"></svg>
+            }
+          </div>
+          <div class="vehicle-body">
+            <div class="tenant">{{ vehicle.tenantName }}</div>
+            <h2>{{ vehicle.brand }} {{ vehicle.model }}</h2>
+            <div class="meta">
+              <span>{{ vehicle.category || 'Vehicle' }}</span>
+              <span>{{ vehicle.transmission || 'Not specified' }}</span>
+              <span>{{ vehicle.fuelType || 'Not specified' }}</span>
+              <span>{{ vehicle.dailyKmLimit }} km/day</span>
+            </div>
+          </div>
+          <div class="vehicle-footer">
+            <div><strong>{{ money(vehicle.dailyPrice) }}</strong><span>per day</span></div>
+            <a mat-flat-button color="primary" [routerLink]="['/rent/vehicles', vehicle.vehicleId]" [queryParams]="detailParams()">View details</a>
+          </div>
+        </article>
+      }
+    </div>
+    @if (totalPages() > 1) {
+      <div class="pager">
+        <button mat-stroked-button (click)="search(page() - 1)" [disabled]="page() === 0">Previous</button>
+        <span>Page {{ page() + 1 }} of {{ totalPages() }}</span>
+        <button mat-stroked-button (click)="search(page() + 1)" [disabled]="page() + 1 >= totalPages()">Next</button>
+      </div>
+    }
+  }
+</section>

@@ -21,6 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +41,7 @@ public class PublicMarketplaceService {
             String brand,
             String model,
             VehicleCategory category,
+            List<VehicleCategory> categories,
             TransmissionType transmission,
             FuelType fuelType,
             Integer minSeats,
@@ -52,6 +56,11 @@ public class PublicMarketplaceService {
         int safePage = Math.max(0, page);
         int safeSize = Math.min(50, Math.max(1, size));
         PageRequest pageable = PageRequest.of(safePage, safeSize, resolveSort(sort));
+        List<VehicleCategory> resolvedCategories = resolveCategories(category, categories);
+        boolean categoriesEmpty = resolvedCategories.isEmpty();
+        List<VehicleCategory> queryCategories = categoriesEmpty
+                ? Arrays.asList(VehicleCategory.values())
+                : resolvedCategories;
 
         Page<Vehicle> result = vehicleRepository.searchPublicMarketplace(
                 pickupDateTime,
@@ -61,7 +70,8 @@ public class PublicMarketplaceService {
                 minDailyKmLimit,
                 normalize(brand),
                 normalize(model),
-                category,
+                queryCategories,
+                categoriesEmpty,
                 transmission,
                 fuelType,
                 minSeats,
@@ -76,6 +86,20 @@ public class PublicMarketplaceService {
                 result.getTotalElements(),
                 result.getTotalPages()
         );
+    }
+
+    private List<VehicleCategory> resolveCategories(
+            VehicleCategory category,
+            List<VehicleCategory> categories
+    ) {
+        List<VehicleCategory> resolved = new ArrayList<>();
+        if (categories != null) {
+            categories.stream().filter(item -> item != null && !resolved.contains(item)).forEach(resolved::add);
+        }
+        if (category != null && !resolved.contains(category)) {
+            resolved.add(category);
+        }
+        return List.copyOf(resolved);
     }
 
     public PublicMarketplaceVehicleDetailResponse getVehicle(Long vehicleId) {

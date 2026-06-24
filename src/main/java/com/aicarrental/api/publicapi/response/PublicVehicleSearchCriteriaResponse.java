@@ -5,6 +5,7 @@ import com.aicarrental.domain.vehicle.TransmissionType;
 import com.aicarrental.domain.vehicle.VehicleCategory;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public record PublicVehicleSearchCriteriaResponse(
         BigDecimal minDailyPrice,
@@ -12,7 +13,7 @@ public record PublicVehicleSearchCriteriaResponse(
         Integer minDailyKmLimit,
         String brand,
         String model,
-        VehicleCategory category,
+        List<VehicleCategory> categories,
         TransmissionType transmission,
         FuelType fuelType,
         Integer minSeats,

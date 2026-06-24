@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CustomerProfile } from '../../core/customer-auth/customer-auth.models';
-import { CustomerReservation, MarketplaceSearchResponse, MarketplaceVehicleDetail, ReservationResponse, TrackingResponse, VehicleSearchCriteria } from './marketplace.models';
+import { CustomerReservation, MarketplaceSearchResponse, MarketplaceVehicleDetail, ReservationResponse, SemanticVehicleSearchRequest, SemanticVehicleSearchResponse, TrackingResponse, VehicleSearchCriteria } from './marketplace.models';
 
 @Injectable({ providedIn: 'root' })
 export class MarketplaceService {
@@ -12,9 +12,20 @@ export class MarketplaceService {
   search(criteria: VehicleSearchCriteria): Observable<MarketplaceSearchResponse> {
     let params = new HttpParams();
     Object.entries(criteria).forEach(([key, value]) => {
-      if (value !== null && value !== undefined && value !== '') params = params.set(key, String(value));
+      if (value === null || value === undefined || value === '') return;
+      if (Array.isArray(value)) {
+        value.forEach((item) => params = params.append(key, String(item)));
+      } else {
+        params = params.set(key, String(value));
+      }
     });
     return this.http.get<MarketplaceSearchResponse>(`${environment.apiUrl}/api/public/marketplace/vehicles`, { params });
+  }
+  interpretSearch(request: SemanticVehicleSearchRequest): Observable<SemanticVehicleSearchResponse> {
+    return this.http.post<SemanticVehicleSearchResponse>(
+      `${environment.apiUrl}/api/public/marketplace/vehicle-search/interpret`,
+      request
+    );
   }
   getVehicle(id: number): Observable<MarketplaceVehicleDetail> {
     return this.http.get<MarketplaceVehicleDetail>(`${environment.apiUrl}/api/public/marketplace/vehicles/${id}`);

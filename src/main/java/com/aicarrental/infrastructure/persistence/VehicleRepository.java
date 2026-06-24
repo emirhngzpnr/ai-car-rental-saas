@@ -91,7 +91,7 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
           AND (:minDailyKmLimit IS NULL OR v.dailyKmLimit >= :minDailyKmLimit)
           AND (:brand = '' OR LOWER(v.brand) LIKE CONCAT('%', :brand, '%'))
           AND (:model = '' OR LOWER(v.model) LIKE CONCAT('%', :model, '%'))
-          AND (:category IS NULL OR v.category = :category)
+          AND (:categoriesEmpty = true OR v.category IN :categories)
           AND (:transmission IS NULL OR v.transmission = :transmission)
           AND (:fuelType IS NULL OR v.fuelType = :fuelType)
           AND (:minSeats IS NULL OR v.seatCount >= :minSeats)
@@ -118,12 +118,58 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
             @Param("minDailyKmLimit") Integer minDailyKmLimit,
             @Param("brand") String brand,
             @Param("model") String model,
-            @Param("category") com.aicarrental.domain.vehicle.VehicleCategory category,
+            @Param("categories") List<com.aicarrental.domain.vehicle.VehicleCategory> categories,
+            @Param("categoriesEmpty") boolean categoriesEmpty,
             @Param("transmission") com.aicarrental.domain.vehicle.TransmissionType transmission,
             @Param("fuelType") com.aicarrental.domain.vehicle.FuelType fuelType,
             @Param("minSeats") Integer minSeats,
             @Param("location") String location,
             Pageable pageable
+    );
+
+    @Query(value = """
+        SELECT
+            COUNT(*) AS sampleCount,
+            percentile_cont(0.30) WITHIN GROUP (ORDER BY v.daily_price) AS p30,
+            percentile_cont(0.45) WITHIN GROUP (ORDER BY v.daily_price) AS p45,
+            percentile_cont(0.60) WITHIN GROUP (ORDER BY v.daily_price) AS p60,
+            percentile_cont(0.70) WITHIN GROUP (ORDER BY v.daily_price) AS p70,
+            percentile_cont(0.75) WITHIN GROUP (ORDER BY v.daily_price) AS p75
+        FROM rental.vehicles v
+        JOIN rental.tenants t ON t.id = v.tenant_id
+        WHERE v.active = true
+          AND t.active = true
+          AND v.status = 'AVAILABLE'
+          AND (:minDailyKmLimit IS NULL OR v.daily_km_limit >= :minDailyKmLimit)
+          AND (:brand = '' OR LOWER(v.brand) LIKE CONCAT('%', :brand, '%'))
+          AND (:model = '' OR LOWER(v.model) LIKE CONCAT('%', :model, '%'))
+          AND (:categoriesEmpty = true OR v.category IN (:categories))
+          AND (:transmission = '' OR v.transmission = :transmission)
+          AND (:fuelType = '' OR v.fuel_type = :fuelType)
+          AND (:minSeats IS NULL OR v.seat_count >= :minSeats)
+          AND (:location = '' OR LOWER(v.location) LIKE CONCAT('%', :location, '%'))
+          AND NOT EXISTS (
+              SELECT 1
+              FROM rental.reservations r
+              WHERE r.vehicle_id = v.id
+                AND r.active = true
+                AND r.status IN ('PENDING_PAYMENT', 'DEPOSIT_PAID', 'CONFIRMED')
+                AND r.pickup_date_time < :returnDateTime
+                AND r.return_date_time > :pickupDateTime
+          )
+        """, nativeQuery = true)
+    VehiclePriceDistributionProjection calculateAvailablePriceDistribution(
+            @Param("pickupDateTime") LocalDateTime pickupDateTime,
+            @Param("returnDateTime") LocalDateTime returnDateTime,
+            @Param("minDailyKmLimit") Integer minDailyKmLimit,
+            @Param("brand") String brand,
+            @Param("model") String model,
+            @Param("categories") List<String> categories,
+            @Param("categoriesEmpty") boolean categoriesEmpty,
+            @Param("transmission") String transmission,
+            @Param("fuelType") String fuelType,
+            @Param("minSeats") Integer minSeats,
+            @Param("location") String location
     );
 
     @Query("""
