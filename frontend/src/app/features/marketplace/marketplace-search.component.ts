@@ -204,7 +204,7 @@ export class MarketplaceSearchComponent implements OnInit {
         this.totalPages.set(response.totalPages);
       },
       error: (apiError) => {
-        this.error.set(apiError.error?.message || 'Please verify the dates and filters.');
+        this.error.set(this.searchErrorMessage(apiError));
         this.loading.set(false);
       },
       complete: () => this.loading.set(false)
@@ -302,5 +302,12 @@ export class MarketplaceSearchComponent implements OnInit {
 
   private label(value: string): string {
     return value.toLowerCase().replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  private searchErrorMessage(apiError: { status?: number; error?: { message?: string } }): string {
+    if (apiError.status === 0) {
+      return 'The rental service is currently unreachable. Make sure the backend is running and try again.';
+    }
+    return apiError.error?.message || 'Please verify the dates and filters.';
   }
 }
