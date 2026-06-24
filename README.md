@@ -140,5 +140,8 @@ Docker must be running for the backend integration test.
 
 - Deposit and refund processing use a mock payment provider.
 - Notification delivery uses a mock email sender.
-- Customer email verification, password reset, and refresh tokens are planned production work.
+- Staff and customer access tokens are kept in browser memory and renewed through separate rotating HttpOnly refresh cookies.
+- The example access-token lifetime is 15 minutes; refresh sessions default to seven days.
+- For HTTPS production deployments, set `AUTH_REFRESH_COOKIE_SECURE=true`. Cross-site frontend/backend deployments also require a compatible `AUTH_REFRESH_COOKIE_SAME_SITE` value and an exact credentialed CORS origin.
+- Customer email verification and password reset remain planned production work.
 - Gemini is optional at runtime only where rule-based fallback behavior is available.

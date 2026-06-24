@@ -62,20 +62,23 @@ public class AuthService {
             throw new BusinessException("Invalid email or password");
         }
 
-        String token = jwtService.generateToken(user);
-
-        Long tenantId = user.getTenant() != null ? user.getTenant().getId() : null;
-
         auditEventPublisher.publish(new AuditEvent(
                 user.getId(),
                 user.getEmail(),
                 user.getRole().name(),
-                tenantId,
+                user.getTenant() != null ? user.getTenant().getId() : null,
                 AuditAction.LOGIN_SUCCESS,
                 "Auth",
                 user.getId(),
                 "Login successful: " + user.getEmail()
         ));
+
+        return createAuthResponse(user);
+    }
+
+    public AuthResponse createAuthResponse(User user) {
+        String token = jwtService.generateToken(user);
+        Long tenantId = user.getTenant() != null ? user.getTenant().getId() : null;
 
         return new AuthResponse(
                 token,

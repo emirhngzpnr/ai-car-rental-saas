@@ -1,11 +1,13 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { catchError, throwError } from 'rxjs';
+import { catchError, switchMap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-  if (request.url.includes('/api/public/') || request.url.includes('/api/customer/')) {
+  if (request.url.includes('/api/public/')
+    || request.url.includes('/api/customer/')
+    || request.url.includes('/api/auth/')) {
     return next(request);
   }
 
@@ -14,9 +16,18 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const session = authService.session();
 
   if (session && !authService.isSessionValid(session)) {
-    authService.logout();
-    void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
-    return throwError(() => new Error('Session expired'));
+    return authService.refresh().pipe(
+      switchMap((refreshedSession) => next(request.clone({
+        setHeaders: {
+          Authorization: `${refreshedSession.tokenType} ${refreshedSession.token}`
+        }
+      }))),
+      catchError((error) => {
+        authService.logout();
+        void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+        return throwError(() => error);
+      })
+    );
   }
 
   const authorizedRequest = session?.token
@@ -30,8 +41,18 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   return next(authorizedRequest).pipe(
     catchError((error) => {
       if (error.status === 401) {
-        authService.logout();
-        void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+        return authService.refresh().pipe(
+          switchMap((refreshedSession) => next(request.clone({
+            setHeaders: {
+              Authorization: `${refreshedSession.tokenType} ${refreshedSession.token}`
+            }
+          }))),
+          catchError(() => {
+            authService.logout();
+            void router.navigate(['/login'], { queryParams: { returnUrl: router.url } });
+            return throwError(() => error);
+          })
+        );
       }
 
       return throwError(() => error);
