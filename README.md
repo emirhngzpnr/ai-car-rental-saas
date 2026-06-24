@@ -143,5 +143,7 @@ Docker must be running for the backend integration test.
 - Staff and customer access tokens are kept in browser memory and renewed through separate rotating HttpOnly refresh cookies.
 - The example access-token lifetime is 15 minutes; refresh sessions default to seven days.
 - For HTTPS production deployments, set `AUTH_REFRESH_COOKIE_SECURE=true`. Cross-site frontend/backend deployments also require a compatible `AUTH_REFRESH_COOKIE_SAME_SITE` value and an exact credentialed CORS origin.
+- Marketplace customers can describe vehicle preferences in Turkish or English. AI extracts semantic price and segment intent, while PostgreSQL applies availability, tenant safety, category and live price-percentile filters.
+- Relative expressions such as "not too expensive" use the current matching fleet price distribution; explicit numeric price limits always take priority.
 - Customer email verification and password reset remain planned production work.
 - Gemini is optional at runtime only where rule-based fallback behavior is available.

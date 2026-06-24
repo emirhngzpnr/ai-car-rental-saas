@@ -26,6 +26,11 @@ public class PublicMarketplaceAiController {
             HttpServletRequest servletRequest
     ) {
         rateLimiter.checkAllowed(servletRequest.getRemoteAddr());
-        return ResponseEntity.ok(interpretationService.interpret(request.query()));
+        return ResponseEntity.ok(interpretationService.interpret(
+                request.query(),
+                request.pickupDateTime(),
+                request.returnDateTime(),
+                request.location()
+        ));
     }
 }

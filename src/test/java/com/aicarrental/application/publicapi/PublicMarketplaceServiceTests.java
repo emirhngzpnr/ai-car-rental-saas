@@ -33,7 +33,7 @@ class PublicMarketplaceServiceTests {
                 pickup.plusDays(2),
                 BigDecimal.valueOf(5000),
                 BigDecimal.valueOf(2000),
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null,
                 "recommended", 0, 12
         ));
     }
@@ -44,7 +44,7 @@ class PublicMarketplaceServiceTests {
         assertThrows(BusinessException.class, () -> service.search(
                 pickup,
                 pickup.plusDays(2),
-                null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null,
                 "recommended", 0, 12
         ));
     }

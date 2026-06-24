@@ -7,6 +7,7 @@ export interface VehicleSearchCriteria {
   brand?: string;
   model?: string;
   category?: string;
+  categories?: string[];
   transmission?: string;
   fuelType?: string;
   minSeats?: number | null;
@@ -14,6 +15,35 @@ export interface VehicleSearchCriteria {
   sort?: string;
   page?: number;
   size?: number;
+}
+export interface SemanticVehicleSearchRequest {
+  query: string;
+  pickupDateTime: string;
+  returnDateTime: string;
+  location?: string;
+}
+export interface SemanticVehicleSearchCriteria {
+  minDailyPrice: number | null;
+  maxDailyPrice: number | null;
+  minDailyKmLimit: number | null;
+  brand: string | null;
+  model: string | null;
+  categories: string[];
+  transmission: string | null;
+  fuelType: string | null;
+  minSeats: number | null;
+  location: string | null;
+  sort: string | null;
+}
+export interface SemanticVehicleSearchResponse {
+  criteria: SemanticVehicleSearchCriteria;
+  interpretation: {
+    priceIntent: string | null;
+    segmentIntent: string | null;
+  };
+  summary: string;
+  inferences: string[];
+  warnings: string[];
 }
 export interface MarketplaceVehicle {
   vehicleId: number; tenantSlug: string; tenantName: string; brand: string; model: string;

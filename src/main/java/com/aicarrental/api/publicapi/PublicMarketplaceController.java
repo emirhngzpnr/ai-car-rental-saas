@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/public/marketplace/vehicles")
@@ -34,6 +35,7 @@ public class PublicMarketplaceController {
             @RequestParam(required = false) String brand,
             @RequestParam(required = false) String model,
             @RequestParam(required = false) VehicleCategory category,
+            @RequestParam(required = false) List<VehicleCategory> categories,
             @RequestParam(required = false) TransmissionType transmission,
             @RequestParam(required = false) FuelType fuelType,
             @RequestParam(required = false) Integer minSeats,
@@ -44,8 +46,8 @@ public class PublicMarketplaceController {
     ) {
         return ResponseEntity.ok(marketplaceService.search(
                 pickupDateTime, returnDateTime, minDailyPrice, maxDailyPrice,
-                minDailyKmLimit, brand, model, category, transmission,
-                fuelType, minSeats, location, sort, page, size
+                minDailyKmLimit, brand, model, category, categories,
+                transmission, fuelType, minSeats, location, sort, page, size
         ));
     }
 
