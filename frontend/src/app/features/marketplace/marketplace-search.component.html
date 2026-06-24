@@ -204,7 +204,12 @@
         <article class="vehicle-card">
           <div class="vehicle-media">
             @if (vehicle.imageUrl) {
-              <img [src]="vehicle.imageUrl" [alt]="vehicle.brand + ' ' + vehicle.model">
+              <img
+                [src]="vehicle.imageUrl"
+                [alt]="vehicle.brand + ' ' + vehicle.model"
+                loading="lazy"
+                decoding="async"
+              >
             } @else {
               <svg lucideCar [size]="50" [strokeWidth]="1.5"></svg>
             }
