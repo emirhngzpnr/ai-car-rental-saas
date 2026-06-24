@@ -136,6 +136,10 @@ export class MarketplaceSearchComponent implements OnInit {
 
     this.aiLoading.set(true);
     this.aiError.set('');
+    this.aiSummary.set('');
+    this.aiInferences.set([]);
+    this.aiWarnings.set([]);
+    this.appliedAiFilters.set([]);
     this.service.interpretSearch({
       query,
       pickupDateTime,
@@ -151,6 +155,10 @@ export class MarketplaceSearchComponent implements OnInit {
         this.search(0);
       },
       error: (apiError) => {
+        this.aiSummary.set('');
+        this.aiInferences.set([]);
+        this.aiWarnings.set([]);
+        this.appliedAiFilters.set([]);
         this.aiError.set(
           apiError.error?.message
           || 'AI search is temporarily unavailable. You can continue with the manual filters.'

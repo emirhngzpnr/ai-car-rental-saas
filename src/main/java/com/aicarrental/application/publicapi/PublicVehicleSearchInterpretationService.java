@@ -6,6 +6,7 @@ import com.aicarrental.api.publicapi.response.PublicVehicleSearchInterpretRespon
 import com.aicarrental.application.publicapi.ai.PriceIntent;
 import com.aicarrental.application.publicapi.ai.SegmentIntent;
 import com.aicarrental.application.publicapi.ai.VehicleSearchAiClient;
+import com.aicarrental.application.publicapi.ai.VehicleSearchHeuristicInterpreter;
 import com.aicarrental.application.publicapi.ai.VehicleSearchAiResult;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ServiceUnavailableException;
@@ -43,6 +44,7 @@ public class PublicVehicleSearchInterpretationService {
             Set.of("recommended", "priceAsc", "priceDesc", "kmLimitDesc");
 
     private final VehicleSearchAiClient aiClient;
+    private final VehicleSearchHeuristicInterpreter heuristicInterpreter;
     private final VehicleRepository vehicleRepository;
 
     public PublicVehicleSearchInterpretResponse interpret(
@@ -54,20 +56,26 @@ public class PublicVehicleSearchInterpretationService {
         String normalizedQuery = normalizeQuery(query);
         PublicVehicleService.validateDateRange(pickupDateTime, returnDateTime);
 
+        VehicleSearchAiResult fallback = heuristicInterpreter.interpret(normalizedQuery);
         VehicleSearchAiResult result;
+        boolean providerFallback = false;
         try {
-            result = aiClient.interpret(normalizedQuery);
+            result = heuristicInterpreter.merge(aiClient.interpret(normalizedQuery), fallback);
         } catch (Exception exception) {
             log.warn("AI marketplace interpretation failed: {}", exception.getClass().getSimpleName());
-            throw unavailable();
+            result = fallback;
+            providerFallback = true;
         }
-        if (result == null) {
+        if (!heuristicInterpreter.hasCriteria(result)) {
             throw unavailable();
         }
 
         validateNumbers(result);
         List<String> warnings = sanitizeWarnings(result.warnings());
         List<String> inferences = new ArrayList<>();
+        if (providerFallback) {
+            addWarning(warnings, "AI provider was unavailable, so supported search terms were interpreted locally.");
+        }
 
         VehicleCategory explicitCategory = parseEnum(
                 result.category(), VehicleCategory.class, "category", warnings

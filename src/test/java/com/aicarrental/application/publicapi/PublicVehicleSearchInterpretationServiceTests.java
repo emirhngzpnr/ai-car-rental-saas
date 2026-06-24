@@ -3,6 +3,7 @@ package com.aicarrental.application.publicapi;
 import com.aicarrental.application.publicapi.ai.PriceIntent;
 import com.aicarrental.application.publicapi.ai.SegmentIntent;
 import com.aicarrental.application.publicapi.ai.VehicleSearchAiClient;
+import com.aicarrental.application.publicapi.ai.VehicleSearchHeuristicInterpreter;
 import com.aicarrental.application.publicapi.ai.VehicleSearchAiResult;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ServiceUnavailableException;
@@ -50,7 +51,11 @@ class PublicVehicleSearchInterpretationServiceTests {
 
     @BeforeEach
     void setUp() {
-        service = new PublicVehicleSearchInterpretationService(aiClient, vehicleRepository);
+        service = new PublicVehicleSearchInterpretationService(
+                aiClient,
+                new VehicleSearchHeuristicInterpreter(),
+                vehicleRepository
+        );
     }
 
     @Test
@@ -161,12 +166,42 @@ class PublicVehicleSearchInterpretationServiceTests {
     }
 
     @Test
-    void returnsServiceUnavailableWhenAiClientFails() {
-        when(aiClient.interpret("automatic car")).thenThrow(new IllegalStateException("provider failure"));
+    void resolvesCheapestTurkishRequestWhenAiClientFails() {
+        when(aiClient.interpret("en ucuz araba")).thenThrow(new IllegalStateException("provider failure"));
+
+        var response = service.interpret("en ucuz araba", PICKUP, RETURN, null);
+
+        assertEquals("priceAsc", response.criteria().sort());
+        assertEquals(1, response.warnings().size());
+        verify(vehicleRepository, never()).calculateAvailablePriceDistribution(
+                any(), any(), any(), anyString(), anyString(), anyList(), anyBoolean(),
+                anyString(), anyString(), any(), anyString()
+        );
+    }
+
+    @Test
+    void replacesEmptyAiInterpretationWithLocalCheapestIntent() {
+        when(aiClient.interpret("en ucuz araba")).thenReturn(result(
+                null, null, null, null, null, null, null, null,
+                null, null, null, null, null,
+                "No filters were found in the search request.",
+                List.of("No filters were found in the search request.")
+        ));
+
+        var response = service.interpret("en ucuz araba", PICKUP, RETURN, null);
+
+        assertEquals("priceAsc", response.criteria().sort());
+        assertEquals("Search preferences were interpreted from your request.", response.summary());
+        assertEquals(List.of(), response.warnings());
+    }
+
+    @Test
+    void returnsServiceUnavailableWhenProviderFailsAndNoLocalIntentMatches() {
+        when(aiClient.interpret("surprise me")).thenThrow(new IllegalStateException("provider failure"));
 
         assertThrows(
                 ServiceUnavailableException.class,
-                () -> service.interpret("automatic car", PICKUP, RETURN, null)
+                () -> service.interpret("surprise me", PICKUP, RETURN, null)
         );
     }
 

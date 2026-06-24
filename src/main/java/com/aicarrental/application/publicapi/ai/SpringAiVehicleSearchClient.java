@@ -35,11 +35,11 @@ public class SpringAiVehicleSearchClient implements VehicleSearchAiClient {
             segmentIntent, summary, warnings.
 
             Examples:
-            - "not too expensive" or "çok pahalı olmayan" -> NOT_EXPENSIVE
+            - "not too expensive" or "cok pahali olmayan" -> NOT_EXPENSIVE
             - "cheap" or "ucuz" -> BUDGET
             - "mid-range" or "orta segment" -> segmentIntent MID_RANGE
-            - "family car" or "aile aracı" -> segmentIntent FAMILY
-            - "spacious" or "geniş" -> segmentIntent SPACIOUS
+            - "family car" or "aile araci" -> segmentIntent FAMILY
+            - "spacious" or "genis" -> segmentIntent SPACIOUS
             """;
 
     private final ChatClient.Builder chatClientBuilder;
