@@ -3,6 +3,7 @@ package com.aicarrental.application.payment;
 import com.aicarrental.api.payment.request.CreatePaymentRequest;
 import com.aicarrental.api.payment.response.PaymentTransactionResponse;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
@@ -39,6 +40,7 @@ public class PaymentTransactionService {
     private final AuditEventPublisher auditEventPublisher;
     private final CurrentUserService currentUserService;
     private final OutboxMessageService outboxMessageService;
+    private final ReportCacheInvalidator reportCacheInvalidator;
 
     public PaymentTransactionResponse createPayment(CreatePaymentRequest request) {
 
@@ -147,6 +149,7 @@ public class PaymentTransactionService {
                         LocalDateTime.now()
                 )
         );
+        reportCacheInvalidator.evictAfterCommit();
 
         return mapToResponse(saved);
     }

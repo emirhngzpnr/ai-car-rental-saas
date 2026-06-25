@@ -13,6 +13,7 @@ public interface OutboxMessageRepository extends JpaRepository<OutboxMessage, Lo
         SELECT *
         FROM rental.outbox_messages
         WHERE status = 'PENDING'
+          AND (next_attempt_at IS NULL OR next_attempt_at <= CURRENT_TIMESTAMP)
         ORDER BY created_at ASC
         LIMIT 20
         FOR UPDATE SKIP LOCKED

@@ -41,8 +41,7 @@ public class ReservationExpiredScheduler {
                 LocalDateTime.now().minusMinutes(PAYMENT_TIMEOUT_MINUTES);
 
         List<Reservation> expiredReservations =
-                reservationRepository.findByStatusAndActiveTrueAndCreatedAtBefore(
-                        ReservationStatus.PENDING_PAYMENT,
+                reservationRepository.findAndLockExpiredPendingPaymentReservations(
                         expirationThreshold
                 );
 

@@ -2,6 +2,7 @@ package com.aicarrental.application.publicapi;
 
 import com.aicarrental.api.publicapi.request.PublicDepositPaymentRequest;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.domain.reservation.Reservation;
@@ -28,6 +29,7 @@ class PublicPaymentServiceTests {
     @Mock ReservationRepository reservationRepository;
     @Mock OutboxMessageService outboxMessageService;
     @Mock AuditEventPublisher auditEventPublisher;
+    @Mock ReportCacheInvalidator reportCacheInvalidator;
 
     private PublicPaymentService service;
 
@@ -38,7 +40,8 @@ class PublicPaymentServiceTests {
                 paymentTransactionRepository,
                 reservationRepository,
                 outboxMessageService,
-                auditEventPublisher
+                auditEventPublisher,
+                reportCacheInvalidator
         );
     }
 

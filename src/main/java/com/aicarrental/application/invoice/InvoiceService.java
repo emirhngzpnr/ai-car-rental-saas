@@ -12,6 +12,7 @@ import com.aicarrental.domain.rental.Rental;
 import com.aicarrental.domain.reservation.Reservation;
 import com.aicarrental.infrastructure.persistence.InvoiceRepository;
 import com.aicarrental.infrastructure.persistence.RentalRepository;
+import com.aicarrental.application.report.ReportCacheInvalidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,13 @@ public class InvoiceService {
     private final RentalRepository rentalRepository;
     private final InvoiceNumberGeneratorService invoiceNumberGeneratorService;
     private final AuditEventPublisher auditEventPublisher;
+    private final ReportCacheInvalidator reportCacheInvalidator;
+
+    public Invoice createRentalCompletionInvoiceIfAbsent(Long rentalId) {
+        return invoiceRepository.findByRental_Id(rentalId)
+                .orElseGet(() -> createRentalCompletionInvoice(rentalId));
+    }
+
     public Invoice createRentalCompletionInvoice(Long rentalId) {
 
         if (invoiceRepository.existsByRental_Id(rentalId)) {
@@ -133,6 +141,7 @@ public class InvoiceService {
                 savedInvoice.getId(),
                 "Invoice created. Invoice number: " + savedInvoice.getInvoiceNumber()
         ));
+        reportCacheInvalidator.evictAfterCommit();
 
         return savedInvoice;
     }
