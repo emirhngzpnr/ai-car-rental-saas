@@ -1,5 +1,6 @@
 package com.aicarrental.api.publicapi.request;
 
+import com.aicarrental.common.validation.ValidPhoneNumber;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
@@ -15,6 +16,7 @@ public record PublicCreateReservationRequest(
         String customerFullName,
 
         @NotBlank(message = "Customer phone is required")
+        @ValidPhoneNumber
         String customerPhone,
 
         @Email(message = "Customer email format is invalid")

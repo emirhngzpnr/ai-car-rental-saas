@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { PHONE_VALIDATORS } from '../../core/validation/phone.validation';
 import { VehicleResponse } from '../vehicles/vehicle.models';
 import { VehicleService } from '../vehicles/vehicle.service';
 import { CreateReservationRequest } from './reservation.models';
@@ -33,7 +34,7 @@ export class ReservationFormDialogComponent {
   readonly form = this.formBuilder.nonNullable.group({
     vehicleId: [0, [Validators.required, Validators.min(1)]],
     customerFullName: ['', [Validators.required]],
-    customerPhone: ['', [Validators.required]],
+    customerPhone: ['', PHONE_VALIDATORS],
     customerEmail: ['', [Validators.required, Validators.email]],
     customerIdentityNumber: ['', [Validators.required]],
     pickupDateTime: ['', [Validators.required]],

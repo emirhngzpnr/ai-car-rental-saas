@@ -18,7 +18,19 @@
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Customer phone</mat-label>
-        <input matInput formControlName="customerPhone">
+        <input
+          matInput
+          type="tel"
+          inputmode="tel"
+          autocomplete="tel"
+          maxlength="20"
+          formControlName="customerPhone"
+        >
+        @if (form.controls.customerPhone.hasError('required')) {
+          <mat-error>Phone number is required</mat-error>
+        } @else if (form.controls.customerPhone.hasError('pattern') || form.controls.customerPhone.hasError('maxlength')) {
+          <mat-error>Enter 7 to 15 digits using +, spaces, hyphens or parentheses</mat-error>
+        }
       </mat-form-field>
       <mat-form-field appearance="outline">
         <mat-label>Customer email</mat-label>
