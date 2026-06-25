@@ -21,3 +21,10 @@ export interface InvoiceResponse {
   currency: string;
   issuedAt: string;
 }
+
+export interface InvoiceQuery {
+  status?: InvoiceStatus | '';
+  type?: InvoiceType | '';
+  page: number;
+  size: number;
+}

@@ -50,6 +50,10 @@ export const routes: Routes = [
       { path: 'rentals', component: RentalsComponent },
       { path: 'payments', component: PaymentsComponent },
       {
+        path: 'invoices',
+        loadComponent: () => import('./features/invoices/invoices.component').then((component) => component.InvoicesComponent)
+      },
+      {
         path: 'reports',
         loadComponent: () => import('./features/reports/reports.component').then((component) => component.ReportsComponent)
       },

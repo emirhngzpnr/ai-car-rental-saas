@@ -2,7 +2,10 @@ package com.aicarrental.infrastructure.persistence;
 
 import com.aicarrental.domain.invoice.Invoice;
 import com.aicarrental.domain.invoice.InvoiceStatus;
+import com.aicarrental.domain.invoice.InvoiceType;
 import com.aicarrental.infrastructure.persistence.projection.MonthlyRevenueProjection;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,7 +17,27 @@ import java.util.Optional;
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     Optional<Invoice> findByRental_Id(Long rentalId);
 
+    Optional<Invoice> findByRental_IdAndTenant_Id(Long rentalId, Long tenantId);
+
+    Optional<Invoice> findByIdAndTenant_Id(Long id, Long tenantId);
+
     boolean existsByRental_Id(Long rentalId);
+
+    @Query("""
+        SELECT i
+        FROM Invoice i
+        WHERE (:tenantId IS NULL OR i.tenant.id = :tenantId)
+          AND (:status IS NULL OR i.status = :status)
+          AND (:type IS NULL OR i.type = :type)
+        ORDER BY i.issuedAt DESC
+        """)
+    Page<Invoice> findInvoices(
+            @Param("tenantId") Long tenantId,
+            @Param("status") InvoiceStatus status,
+            @Param("type") InvoiceType type,
+            Pageable pageable
+    );
+
     @Query("""
         SELECT COALESCE(SUM(i.totalAmount), 0)
         FROM Invoice i
