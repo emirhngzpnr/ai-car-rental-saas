@@ -5,16 +5,20 @@ import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.exception.ResourceNotFoundException;
+import com.aicarrental.common.security.CurrentUserService;
 import com.aicarrental.domain.invoice.Invoice;
 import com.aicarrental.domain.invoice.InvoiceStatus;
 import com.aicarrental.domain.invoice.InvoiceType;
 import com.aicarrental.domain.rental.Rental;
+import com.aicarrental.domain.rental.RentalStatus;
 import com.aicarrental.domain.reservation.Reservation;
 import com.aicarrental.infrastructure.persistence.InvoiceRepository;
 import com.aicarrental.infrastructure.persistence.RentalRepository;
 import com.aicarrental.application.report.ReportCacheInvalidator;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,20 +32,64 @@ public class InvoiceService {
     private final InvoiceNumberGeneratorService invoiceNumberGeneratorService;
     private final AuditEventPublisher auditEventPublisher;
     private final ReportCacheInvalidator reportCacheInvalidator;
+    private final CurrentUserService currentUserService;
 
     public Invoice createRentalCompletionInvoiceIfAbsent(Long rentalId) {
         return invoiceRepository.findByRental_Id(rentalId)
                 .orElseGet(() -> createRentalCompletionInvoice(rentalId));
     }
 
-    public Invoice createRentalCompletionInvoice(Long rentalId) {
+    public InvoiceResponse createRentalCompletionInvoiceForCurrentUser(Long rentalId) {
+        Invoice existingInvoice = findExistingInvoiceForCurrentUser(rentalId);
+        if (existingInvoice != null) {
+            return mapToResponse(existingInvoice);
+        }
 
+        Rental rental = findRentalForCurrentUser(rentalId);
+        return mapToResponse(createRentalCompletionInvoice(rental));
+    }
+
+    public Invoice createRentalCompletionInvoice(Long rentalId) {
         if (invoiceRepository.existsByRental_Id(rentalId)) {
             throw new BusinessException("Invoice already exists for this rental");
         }
 
         Rental rental = rentalRepository.findById(rentalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Rental not found"));
+
+        return createRentalCompletionInvoice(rental);
+    }
+
+    public Page<InvoiceResponse> getInvoices(
+            InvoiceStatus status,
+            InvoiceType type,
+            Pageable pageable
+    ) {
+        Long tenantId = currentUserService.isSuperAdmin()
+                ? null
+                : currentUserService.getCurrentTenantId();
+
+        return invoiceRepository.findInvoices(tenantId, status, type, pageable)
+                .map(this::mapToResponse);
+    }
+
+    public Invoice getAccessibleInvoice(Long invoiceId) {
+        if (currentUserService.isSuperAdmin()) {
+            return invoiceRepository.findById(invoiceId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
+        }
+
+        return invoiceRepository.findByIdAndTenant_Id(
+                        invoiceId,
+                        currentUserService.getCurrentTenantId()
+                )
+                .orElseThrow(() -> new ResourceNotFoundException("Invoice not found"));
+    }
+
+    private Invoice createRentalCompletionInvoice(Rental rental) {
+        if (rental.getStatus() != RentalStatus.COMPLETED) {
+            throw new BusinessException("Invoice can only be issued for completed rentals");
+        }
 
         Reservation reservation = rental.getReservation();
 
@@ -144,6 +192,30 @@ public class InvoiceService {
         reportCacheInvalidator.evictAfterCommit();
 
         return savedInvoice;
+    }
+
+    private Invoice findExistingInvoiceForCurrentUser(Long rentalId) {
+        if (currentUserService.isSuperAdmin()) {
+            return invoiceRepository.findByRental_Id(rentalId).orElse(null);
+        }
+
+        return invoiceRepository.findByRental_IdAndTenant_Id(
+                rentalId,
+                currentUserService.getCurrentTenantId()
+        ).orElse(null);
+    }
+
+    private Rental findRentalForCurrentUser(Long rentalId) {
+        if (currentUserService.isSuperAdmin()) {
+            return rentalRepository.findById(rentalId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Rental not found"));
+        }
+
+        return rentalRepository.findByIdAndTenant_IdAndActiveTrue(
+                        rentalId,
+                        currentUserService.getCurrentTenantId()
+                )
+                .orElseThrow(() -> new ResourceNotFoundException("Rental not found"));
     }
 
     public InvoiceResponse mapToResponse(Invoice invoice) {

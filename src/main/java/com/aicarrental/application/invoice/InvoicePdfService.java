@@ -1,7 +1,5 @@
 package com.aicarrental.application.invoice;
-import com.aicarrental.common.exception.ResourceNotFoundException;
 import com.aicarrental.domain.invoice.Invoice;
-import com.aicarrental.infrastructure.persistence.InvoiceRepository;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -13,16 +11,9 @@ import java.io.ByteArrayOutputStream;
 @Service
 @RequiredArgsConstructor
 public class InvoicePdfService {
-    private final InvoiceRepository invoiceRepository;
     private final TemplateEngine templateEngine;
 
-    public byte[] generateInvoicePdf(Long invoiceId) {
-
-        Invoice invoice = invoiceRepository.findById(invoiceId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Invoice not found")
-                );
-
+    public byte[] generateInvoicePdf(Invoice invoice) {
         try {
 
             Context context = new Context();
