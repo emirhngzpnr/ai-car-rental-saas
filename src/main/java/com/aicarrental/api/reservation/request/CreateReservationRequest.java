@@ -1,5 +1,6 @@
 package com.aicarrental.api.reservation.request;
 
+import com.aicarrental.common.validation.ValidPhoneNumber;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +15,7 @@ public record CreateReservationRequest(@NotNull(message = "Vehicle id is require
                                        String customerFullName,
 
                                        @NotBlank(message = "Customer phone is required")
+                                       @ValidPhoneNumber
                                        String customerPhone,
 
                                        @Email(message = "Customer email format is invalid")

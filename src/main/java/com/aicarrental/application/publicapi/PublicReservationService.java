@@ -104,7 +104,7 @@ public class PublicReservationService {
                 .tenant(tenant)
                 .vehicle(vehicle)
                 .customerFullName(request.customerFullName())
-                .customerPhone(request.customerPhone())
+                .customerPhone(request.customerPhone().trim())
                 .customerEmail(request.customerEmail())
                 .customerIdentityNumber(request.customerIdentityNumber())
                 .pickupDateTime(request.pickupDateTime())
