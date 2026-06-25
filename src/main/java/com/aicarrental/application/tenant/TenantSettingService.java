@@ -29,7 +29,7 @@ public class TenantSettingService {
     private final AuditEventPublisher auditEventPublisher;
     @Cacheable(
             value = "tenantSettings",
-            key = "'tenant:' + @currentUserService.getCurrentTenantId()"
+            key = "@tenantSettingService.getCurrentTenantCacheKey()"
     )
     public List<TenantSettingResponse> getCurrentTenantSettings() {
         User currentUser = currentUserService.getCurrentUser();
@@ -67,7 +67,7 @@ public class TenantSettingService {
     }
     @CacheEvict(
             value = "tenantSettings",
-            key = "'tenant:' + @currentUserService.getCurrentTenantId()"
+            key = "@tenantSettingService.getCurrentTenantCacheKey()"
     )
     public TenantSettingResponse updateCurrentTenantSetting(
             String settingKey,
@@ -121,6 +121,15 @@ public class TenantSettingService {
         ));
         return mapToResponse(savedSetting);
     }
+
+    public String getCurrentTenantCacheKey() {
+        User currentUser = currentUserService.getCurrentUser();
+        Long tenantId = currentUserService.isSuperAdmin(currentUser)
+                ? currentUser.getTenant().getId()
+                : currentUserService.getCurrentTenantId();
+        return "tenant:" + tenantId;
+    }
+
     private void validateSettingValue(
             TenantSettingKey key,
             String value

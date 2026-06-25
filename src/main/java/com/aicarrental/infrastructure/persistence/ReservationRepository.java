@@ -92,6 +92,21 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             ReservationStatus status,
             LocalDateTime createdBefore
     );
+
+    @Query(value = """
+        SELECT *
+        FROM rental.reservations
+        WHERE status = 'PENDING_PAYMENT'
+          AND active = true
+          AND created_at < :createdBefore
+        ORDER BY created_at ASC
+        LIMIT 100
+        FOR UPDATE SKIP LOCKED
+        """, nativeQuery = true)
+    List<Reservation> findAndLockExpiredPendingPaymentReservations(
+            @Param("createdBefore") LocalDateTime createdBefore
+    );
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         SELECT v

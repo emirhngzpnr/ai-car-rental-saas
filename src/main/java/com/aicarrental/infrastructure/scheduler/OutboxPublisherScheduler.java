@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -23,8 +24,6 @@ import java.util.concurrent.TimeUnit;
 @Component
 @RequiredArgsConstructor
 public class OutboxPublisherScheduler {
-    private static final int MAX_RETRY_COUNT = 3;
-
     private final OutboxMessageRepository outboxMessageRepository;
     private final PaymentEventProducer paymentEventProducer;
     private final ObjectMapper objectMapper;
@@ -33,7 +32,19 @@ public class OutboxPublisherScheduler {
     private final ReservationEventProducer reservationEventProducer;
     private final AiPricingEventProducer aiPricingEventProducer;
 
-    @Scheduled(fixedRate = 10_000)
+    @Value("${outbox.publisher.max-retries:5}")
+    private int maxRetryCount;
+
+    @Value("${outbox.publisher.base-delay-seconds:10}")
+    private long baseDelaySeconds;
+
+    @Value("${outbox.publisher.max-delay-seconds:300}")
+    private long maxDelaySeconds;
+
+    @Value("${outbox.publisher.send-timeout-seconds:5}")
+    private long sendTimeoutSeconds;
+
+    @Scheduled(fixedDelayString = "${outbox.publisher.fixed-delay-ms:10000}")
     @Transactional
     public void publishPendingMessages() {
         List<OutboxMessage> pendingMessages =
@@ -44,27 +55,36 @@ public class OutboxPublisherScheduler {
         }
 
         for (OutboxMessage message : pendingMessages) {
+            message.setLastAttemptAt(LocalDateTime.now());
+
             try {
                 publishMessage(message);
 
                 message.setStatus(OutboxMessageStatus.PUBLISHED);
                 message.setProcessedAt(LocalDateTime.now());
+                message.setNextAttemptAt(null);
                 message.setErrorMessage(null);
 
             } catch (Exception exception) {
                 int retryCount = message.getRetryCount() + 1;
 
                 message.setRetryCount(retryCount);
-                message.setErrorMessage(exception.getMessage());
+                message.setErrorMessage(truncateError(exception));
 
-                if (retryCount >= MAX_RETRY_COUNT) {
+                if (retryCount >= maxRetryCount) {
                     message.setStatus(OutboxMessageStatus.FAILED);
+                    message.setNextAttemptAt(null);
+                } else {
+                    message.setNextAttemptAt(
+                            LocalDateTime.now().plusSeconds(calculateRetryDelay(retryCount))
+                    );
                 }
 
                 log.error(
-                        "Failed to publish outbox message id={}, retryCount={}",
+                        "Failed to publish outbox message id={}, retryCount={}, nextAttemptAt={}",
                         message.getId(),
                         retryCount,
+                        message.getNextAttemptAt(),
                         exception
                 );
             }
@@ -87,7 +107,7 @@ public class OutboxPublisherScheduler {
                             message.getMessageKey()
                     );
 
-            future.get(3, java.util.concurrent.TimeUnit.SECONDS);
+            future.get(sendTimeoutSeconds, TimeUnit.SECONDS);
             return;
         }
         if (message.getEventType() == OutboxEventType.RENTAL_COMPLETED) {
@@ -103,7 +123,7 @@ public class OutboxPublisherScheduler {
                             message.getMessageKey()
                     );
 
-            future.get(3, TimeUnit.SECONDS);
+            future.get(sendTimeoutSeconds, TimeUnit.SECONDS);
             return;
         }
         if (message.getEventType() == OutboxEventType.REFUND_COMPLETED) {
@@ -119,7 +139,7 @@ public class OutboxPublisherScheduler {
                             message.getMessageKey()
                     );
 
-            future.get(3, TimeUnit.SECONDS);
+            future.get(sendTimeoutSeconds, TimeUnit.SECONDS);
             return;
         }
         if (message.getEventType() == OutboxEventType.RESERVATION_CREATED) {
@@ -135,7 +155,7 @@ public class OutboxPublisherScheduler {
                             message.getMessageKey()
                     );
 
-            future.get(3, TimeUnit.SECONDS);
+            future.get(sendTimeoutSeconds, TimeUnit.SECONDS);
             return;
         }
 
@@ -152,7 +172,7 @@ public class OutboxPublisherScheduler {
                             message.getMessageKey()
                     );
 
-            future.get(3, TimeUnit.SECONDS);
+            future.get(sendTimeoutSeconds, TimeUnit.SECONDS);
             return;
         }
 
@@ -169,11 +189,32 @@ public class OutboxPublisherScheduler {
                             message.getMessageKey()
                     );
 
-            future.get(3, TimeUnit.SECONDS);
+            future.get(sendTimeoutSeconds, TimeUnit.SECONDS);
             return;
         }
         throw new IllegalArgumentException(
                 "Unsupported outbox event type: " + message.getEventType()
         );
+    }
+
+    private long calculateRetryDelay(int retryCount) {
+        int exponent = Math.min(Math.max(0, retryCount - 1), 30);
+        long multiplier = 1L << exponent;
+        long calculatedDelay;
+
+        try {
+            calculatedDelay = Math.multiplyExact(baseDelaySeconds, multiplier);
+        } catch (ArithmeticException exception) {
+            calculatedDelay = maxDelaySeconds;
+        }
+
+        return Math.min(calculatedDelay, maxDelaySeconds);
+    }
+
+    private String truncateError(Exception exception) {
+        String message = exception.getMessage() != null
+                ? exception.getMessage()
+                : exception.getClass().getSimpleName();
+        return message.length() <= 2000 ? message : message.substring(0, 2000);
     }
 }

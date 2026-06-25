@@ -4,7 +4,6 @@ import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.domain.notification.Notification;
-import com.aicarrental.domain.notification.NotificationStatus;
 import com.aicarrental.infrastructure.notification.MockEmailSenderService;
 import com.aicarrental.infrastructure.persistence.NotificationRepository;
 import jakarta.transaction.Transactional;
@@ -29,9 +28,7 @@ public class NotificationDeliveryScheduler {
     public void processPendingNotifications() {
 
         List<Notification> pendingNotifications =
-                notificationRepository.findTop20ByStatusOrderByCreatedAtAsc(
-                        NotificationStatus.PENDING
-                );
+                notificationRepository.findAndLockNextPendingNotifications();
 
         if (pendingNotifications.isEmpty()) {
             return;

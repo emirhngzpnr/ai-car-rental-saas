@@ -2,6 +2,7 @@ package com.aicarrental.application.payment;
 
 import com.aicarrental.api.payment.request.CreatePaymentRequest;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.common.security.CurrentUserService;
@@ -35,6 +36,7 @@ class PaymentTransactionServiceTests {
     @Mock AuditEventPublisher auditEventPublisher;
     @Mock CurrentUserService currentUserService;
     @Mock OutboxMessageService outboxMessageService;
+    @Mock ReportCacheInvalidator reportCacheInvalidator;
 
     private PaymentTransactionService service;
 
@@ -46,7 +48,8 @@ class PaymentTransactionServiceTests {
                 reservationRepository,
                 auditEventPublisher,
                 currentUserService,
-                outboxMessageService
+                outboxMessageService,
+                reportCacheInvalidator
         );
     }
 

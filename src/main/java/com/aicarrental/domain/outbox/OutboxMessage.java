@@ -59,6 +59,12 @@ public class OutboxMessage {
     @Column(name = "processed_at")
     private LocalDateTime processedAt;
 
+    @Column(name = "next_attempt_at")
+    private LocalDateTime nextAttemptAt;
+
+    @Column(name = "last_attempt_at")
+    private LocalDateTime lastAttemptAt;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

@@ -5,6 +5,7 @@ import com.aicarrental.api.rental.request.StartRentalRequest;
 import com.aicarrental.api.rental.response.RentalResponse;
 import com.aicarrental.application.outbox.OutboxMessageService;
 import com.aicarrental.application.payment.RefundService;
+import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
@@ -44,6 +45,7 @@ public class RentalService {
     private final AuditEventPublisher auditEventPublisher;
     private final OutboxMessageService outboxMessageService;
     private final RefundService refundService;
+    private final ReportCacheInvalidator reportCacheInvalidator;
 
     public RentalResponse startRental(StartRentalRequest request) {
 
@@ -115,6 +117,7 @@ public class RentalService {
                 savedRental.getId(),
                 "Rental started for vehicle: " + vehicle.getPlateNumber()
         ));
+        reportCacheInvalidator.evictAfterCommit();
 
         return mapToResponse(savedRental);
     }
@@ -225,6 +228,7 @@ public class RentalService {
                 completedRental.getId(),
                 "Rental completed for vehicle: " + vehicle.getPlateNumber()
         ));
+        reportCacheInvalidator.evictAfterCommit();
 
         return mapToResponse(completedRental);
     }

@@ -3,6 +3,7 @@ package com.aicarrental.application.vehicle;
 import com.aicarrental.api.vehicle.request.CreateVehicleRequest;
 import com.aicarrental.api.vehicle.request.UpdateVehicleRequest;
 import com.aicarrental.api.vehicle.response.VehicleResponse;
+import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
@@ -30,6 +31,7 @@ public class VehicleService {
     private final VehicleRepository vehicleRepository;
     private final AuditEventPublisher auditEventPublisher;
     private final CurrentUserService currentUserService;
+    private final ReportCacheInvalidator reportCacheInvalidator;
 
 
     public VehicleResponse createVehicle(CreateVehicleRequest request) {
@@ -81,6 +83,7 @@ public class VehicleService {
                 savedVehicle.getId(),
                 "Vehicle created: " + savedVehicle.getPlateNumber()
         ));
+        reportCacheInvalidator.evictAfterCommit();
 
         return mapToResponse(savedVehicle);
     }
@@ -144,6 +147,7 @@ public class VehicleService {
                 updatedVehicle.getId(),
                 "Vehicle updated: " + updatedVehicle.getPlateNumber()
         ));
+        reportCacheInvalidator.evictAfterCommit();
 
         return mapToResponse(updatedVehicle);
     }
@@ -167,6 +171,7 @@ public class VehicleService {
                 deletedVehicle.getId(),
                 "Vehicle soft deleted: " + deletedVehicle.getPlateNumber()
         ));
+        reportCacheInvalidator.evictAfterCommit();
     }
     public List<VehicleResponse> getAvailableVehicles(
             LocalDateTime pickupDateTime,

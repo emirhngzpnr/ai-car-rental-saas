@@ -3,6 +3,7 @@ package com.aicarrental.application.publicapi;
 import com.aicarrental.api.publicapi.request.PublicDepositPaymentRequest;
 import com.aicarrental.api.publicapi.response.PublicDepositPaymentResponse;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
@@ -33,6 +34,7 @@ public class PublicPaymentService {
     private final ReservationRepository reservationRepository;
     private final OutboxMessageService outboxMessageService;
     private final AuditEventPublisher auditEventPublisher;
+    private final ReportCacheInvalidator reportCacheInvalidator;
 
     public PublicDepositPaymentResponse payDeposit(
             String tenantSlug,
@@ -106,6 +108,7 @@ public class PublicPaymentService {
 
         publishPaymentCompleted(savedPayment);
         publishAudit(savedPayment);
+        reportCacheInvalidator.evictAfterCommit();
 
         return new PublicDepositPaymentResponse(
                 reservation.getReservationCode(),
