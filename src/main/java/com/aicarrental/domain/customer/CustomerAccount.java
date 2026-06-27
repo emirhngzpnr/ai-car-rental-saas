@@ -44,6 +44,15 @@ public class CustomerAccount {
     @Column(nullable = false)
     private Boolean active;
 
+    @Column(name = "email_verified", nullable = false)
+    private Boolean emailVerified;
+
+    @Column(name = "email_verified_at")
+    private LocalDateTime emailVerifiedAt;
+
+    @Column(name = "last_verification_email_sent_at")
+    private LocalDateTime lastVerificationEmailSentAt;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

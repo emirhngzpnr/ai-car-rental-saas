@@ -45,6 +45,7 @@ public class CustomerJwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         customerAccountRepository.findByEmailIgnoreCaseAndActiveTrue(jwtService.extractEmail(token))
+                .filter(account -> Boolean.TRUE.equals(account.getEmailVerified()))
                 .filter(account -> SecurityContextHolder.getContext().getAuthentication() == null)
                 .ifPresent(account -> SecurityContextHolder.getContext().setAuthentication(
                         new UsernamePasswordAuthenticationToken(

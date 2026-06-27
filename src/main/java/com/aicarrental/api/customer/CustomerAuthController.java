@@ -2,7 +2,12 @@ package com.aicarrental.api.customer;
 
 import com.aicarrental.api.customer.request.CustomerLoginRequest;
 import com.aicarrental.api.customer.request.CustomerRegisterRequest;
+import com.aicarrental.api.customer.request.CustomerEmailRequest;
+import com.aicarrental.api.customer.request.CustomerResetPasswordRequest;
+import com.aicarrental.api.customer.request.CustomerTokenRequest;
 import com.aicarrental.api.customer.response.CustomerAuthResponse;
+import com.aicarrental.api.customer.response.CustomerMessageResponse;
+import com.aicarrental.api.customer.response.CustomerRegistrationResponse;
 import com.aicarrental.application.customer.CustomerAuthService;
 import com.aicarrental.domain.auth.RefreshTokenPrincipalType;
 import com.aicarrental.domain.customer.CustomerAccount;
@@ -10,6 +15,7 @@ import com.aicarrental.infrastructure.persistence.CustomerAccountRepository;
 import com.aicarrental.infrastructure.security.RefreshTokenCookieService;
 import com.aicarrental.infrastructure.security.RefreshTokenService;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -32,15 +38,12 @@ public class CustomerAuthController {
     private final CustomerAccountRepository customerAccountRepository;
 
     @PostMapping("/register")
-    public ResponseEntity<CustomerAuthResponse> register(@Valid @RequestBody CustomerRegisterRequest request) {
-        CustomerAuthResponse response = authService.register(request);
-        String refreshToken = refreshTokenService.issueToken(
-                RefreshTokenPrincipalType.CUSTOMER,
-                response.customerId()
-        );
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .header(HttpHeaders.SET_COOKIE, createRefreshCookie(refreshToken).toString())
-                .body(response);
+    public ResponseEntity<CustomerRegistrationResponse> register(
+            @Valid @RequestBody CustomerRegisterRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        CustomerRegistrationResponse response = authService.register(request, clientIp(servletRequest));
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/login")
@@ -53,6 +56,34 @@ public class CustomerAuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, createRefreshCookie(refreshToken).toString())
                 .body(response);
+    }
+
+    @PostMapping("/verify-email")
+    public ResponseEntity<CustomerMessageResponse> verifyEmail(@Valid @RequestBody CustomerTokenRequest request) {
+        return ResponseEntity.ok(authService.verifyEmail(request.token()));
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<CustomerMessageResponse> resendVerification(
+            @Valid @RequestBody CustomerEmailRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ResponseEntity.ok(authService.resendVerification(request.email(), clientIp(servletRequest)));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<CustomerMessageResponse> forgotPassword(
+            @Valid @RequestBody CustomerEmailRequest request,
+            HttpServletRequest servletRequest
+    ) {
+        return ResponseEntity.ok(authService.forgotPassword(request.email(), clientIp(servletRequest)));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<CustomerMessageResponse> resetPassword(
+            @Valid @RequestBody CustomerResetPasswordRequest request
+    ) {
+        return ResponseEntity.ok(authService.resetPassword(request.token(), request.newPassword()));
     }
 
     @PostMapping("/refresh")
@@ -98,5 +129,13 @@ public class CustomerAuthController {
                 RefreshTokenService.CUSTOMER_COOKIE_NAME,
                 "/api/customer/auth"
         );
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+        return request.getRemoteAddr();
     }
 }

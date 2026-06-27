@@ -73,6 +73,13 @@ public class RefreshTokenService {
                 });
     }
 
+    @Transactional
+    public void revokeAll(RefreshTokenPrincipalType principalType, Long principalId) {
+        LocalDateTime now = LocalDateTime.now();
+        refreshTokenRepository.findByPrincipalTypeAndPrincipalIdAndRevokedAtIsNull(principalType, principalId)
+                .forEach(token -> token.setRevokedAt(now));
+    }
+
     public long getRefreshExpirationSeconds() {
         return Duration.ofMillis(refreshExpirationMs).toSeconds();
     }

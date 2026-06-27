@@ -5,7 +5,7 @@ import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.domain.notification.Notification;
 import com.aicarrental.domain.notification.NotificationStatus;
-import com.aicarrental.infrastructure.notification.MockEmailSenderService;
+import com.aicarrental.infrastructure.notification.EmailSender;
 import com.aicarrental.infrastructure.persistence.NotificationRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class NotificationDeliveryScheduler {
     private final NotificationRepository notificationRepository;
-    private final MockEmailSenderService mockEmailSenderService;
+    private final EmailSender emailSender;
     private final AuditEventPublisher auditEventPublisher;
 
     @Scheduled(fixedRate = 15_000)
@@ -39,7 +39,7 @@ public class NotificationDeliveryScheduler {
 
             try {
 
-                mockEmailSenderService.sendEmail(
+                emailSender.sendEmail(
                         notification.getRecipient(),
                         notification.getSubject(),
                         notification.getMessage()

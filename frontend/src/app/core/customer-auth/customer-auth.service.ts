@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, finalize, firstValueFrom, map, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { CustomerAuthResponse, CustomerLoginRequest, CustomerRegisterRequest, CustomerSession } from './customer-auth.models';
+import { CustomerAuthResponse, CustomerEmailRequest, CustomerLoginRequest, CustomerMessageResponse, CustomerRegisterRequest, CustomerRegistrationResponse, CustomerResetPasswordRequest, CustomerSession } from './customer-auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class CustomerAuthService {
@@ -16,9 +16,20 @@ export class CustomerAuthService {
     return this.http.post<CustomerAuthResponse>(`${environment.apiUrl}/api/customer/auth/login`, request, { withCredentials: true })
       .pipe(tap((response) => this.sessionSignal.set(response)));
   }
-  register(request: CustomerRegisterRequest): Observable<CustomerAuthResponse> {
-    return this.http.post<CustomerAuthResponse>(`${environment.apiUrl}/api/customer/auth/register`, request, { withCredentials: true })
-      .pipe(tap((response) => this.sessionSignal.set(response)));
+  register(request: CustomerRegisterRequest): Observable<CustomerRegistrationResponse> {
+    return this.http.post<CustomerRegistrationResponse>(`${environment.apiUrl}/api/customer/auth/register`, request, { withCredentials: true });
+  }
+  verifyEmail(token: string): Observable<CustomerMessageResponse> {
+    return this.http.post<CustomerMessageResponse>(`${environment.apiUrl}/api/customer/auth/verify-email`, { token }, { withCredentials: true });
+  }
+  resendVerification(request: CustomerEmailRequest): Observable<CustomerMessageResponse> {
+    return this.http.post<CustomerMessageResponse>(`${environment.apiUrl}/api/customer/auth/resend-verification`, request, { withCredentials: true });
+  }
+  forgotPassword(request: CustomerEmailRequest): Observable<CustomerMessageResponse> {
+    return this.http.post<CustomerMessageResponse>(`${environment.apiUrl}/api/customer/auth/forgot-password`, request, { withCredentials: true });
+  }
+  resetPassword(request: CustomerResetPasswordRequest): Observable<CustomerMessageResponse> {
+    return this.http.post<CustomerMessageResponse>(`${environment.apiUrl}/api/customer/auth/reset-password`, request, { withCredentials: true });
   }
   refresh(): Observable<CustomerSession> {
     if (this.refreshRequest$) {
