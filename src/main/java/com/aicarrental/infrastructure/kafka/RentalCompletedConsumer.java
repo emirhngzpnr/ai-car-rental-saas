@@ -1,4 +1,5 @@
 package com.aicarrental.infrastructure.kafka;
+import com.aicarrental.application.invoice.InvoiceEmailService;
 import com.aicarrental.application.invoice.InvoiceService;
 import com.aicarrental.application.outbox.KafkaEventProcessingService;
 import com.aicarrental.common.event.RentalCompletedEvent;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RentalCompletedConsumer {
     private final InvoiceService invoiceService;
+    private final InvoiceEmailService invoiceEmailService;
     private final KafkaEventProcessingService eventProcessingService;
 
     @KafkaListener(
@@ -38,7 +40,10 @@ public class RentalCompletedConsumer {
                 "rental-completed-invoice",
                 topic,
                 messageKey != null ? messageKey : String.valueOf(event.rentalId()),
-                () -> invoiceService.createRentalCompletionInvoiceIfAbsent(event.rentalId())
+                () -> {
+                    var invoice = invoiceService.createRentalCompletionInvoiceIfAbsent(event.rentalId());
+                    invoiceEmailService.sendRentalCompletionInvoice(invoice);
+                }
         );
     }
 }

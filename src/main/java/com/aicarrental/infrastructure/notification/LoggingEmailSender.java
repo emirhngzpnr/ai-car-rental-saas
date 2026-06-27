@@ -23,4 +23,31 @@ public class LoggingEmailSender implements EmailSender {
                 message
         );
     }
+
+    @Override
+    public void sendEmailWithAttachment(
+            String recipient,
+            String subject,
+            String message,
+            String attachmentFilename,
+            byte[] attachmentContent,
+            String attachmentContentType
+    ) {
+        log.info("""
+                        
+                EMAIL DELIVERY DISABLED
+                TO: {}
+                SUBJECT: {}
+                MESSAGE: {}
+                ATTACHMENT: {} ({} bytes, {})
+                        
+                """,
+                recipient,
+                subject,
+                message,
+                attachmentFilename,
+                attachmentContent != null ? attachmentContent.length : 0,
+                attachmentContentType
+        );
+    }
 }
