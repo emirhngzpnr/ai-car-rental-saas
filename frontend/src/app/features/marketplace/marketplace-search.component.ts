@@ -121,15 +121,13 @@ export class MarketplaceSearchComponent implements OnInit {
       this.aiError.set('Describe the vehicle you need before applying AI filters.');
       return;
     }
-    if (!value.pickupDate || !value.returnDate || !value.pickupTime || !value.returnTime) {
-      this.form.markAllAsTouched();
-      this.aiError.set('Select pickup and return dates before applying AI filters.');
-      return;
-    }
-
-    const pickupDateTime = this.combine(value.pickupDate, value.pickupTime);
-    const returnDateTime = this.combine(value.returnDate, value.returnTime);
-    if (new Date(returnDateTime) <= new Date(pickupDateTime)) {
+    const pickupDateTime = value.pickupDate && value.pickupTime
+      ? this.combine(value.pickupDate, value.pickupTime)
+      : undefined;
+    const returnDateTime = value.returnDate && value.returnTime
+      ? this.combine(value.returnDate, value.returnTime)
+      : undefined;
+    if (pickupDateTime && returnDateTime && new Date(returnDateTime) <= new Date(pickupDateTime)) {
       this.aiError.set('Return date and time must be after pickup.');
       return;
     }
@@ -147,12 +145,25 @@ export class MarketplaceSearchComponent implements OnInit {
       location: value.location || undefined
     }).subscribe({
       next: (response) => {
+        this.applyDateCriteria(response.dateCriteria);
         this.applyCriteria(response.criteria);
         this.aiSummary.set(response.summary);
         this.aiInferences.set(response.inferences);
-        this.aiWarnings.set(response.warnings);
-        this.appliedAiFilters.set(this.describeCriteria(response.criteria));
-        this.search(0);
+        this.aiWarnings.set([
+          ...response.warnings,
+          ...this.describeMissingFields(response.missingFields)
+        ]);
+        this.appliedAiFilters.set([
+          ...this.describeDateCriteria(response.dateCriteria, response.interpretation.dateIntent),
+          ...this.describeCriteria(response.criteria)
+        ]);
+        if (response.missingFields.length) {
+          this.form.markAllAsTouched();
+          return;
+        }
+        if (this.form.valid) {
+          this.search(0);
+        }
       },
       error: (apiError) => {
         this.aiSummary.set('');
@@ -234,6 +245,27 @@ export class MarketplaceSearchComponent implements OnInit {
     });
   }
 
+  private applyDateCriteria(criteria: { pickupDateTime: string | null; returnDateTime: string | null }): void {
+    if (criteria.pickupDateTime) {
+      const pickup = this.parseDateTime(criteria.pickupDateTime, 1);
+      this.form.patchValue({
+        pickupDate: pickup.date,
+        pickupTime: pickup.time
+      });
+    }
+    if (criteria.returnDateTime) {
+      const returned = this.parseDateTime(criteria.returnDateTime, 3);
+      this.form.patchValue({
+        returnDate: returned.date,
+        returnTime: returned.time
+      });
+    } else {
+      this.form.patchValue({
+        returnDate: null
+      });
+    }
+  }
+
   private describeCriteria(criteria: SemanticVehicleSearchCriteria): string[] {
     const chips: string[] = [];
     if (criteria.minDailyPrice != null) chips.push(`Min ${formatTryAmount(criteria.minDailyPrice)}`);
@@ -245,6 +277,25 @@ export class MarketplaceSearchComponent implements OnInit {
     if (criteria.minSeats != null) chips.push(`${criteria.minSeats}+ seats`);
     if (criteria.location) chips.push(criteria.location);
     return chips;
+  }
+
+  private describeDateCriteria(
+    criteria: { pickupDateTime: string | null; returnDateTime: string | null },
+    dateIntent: string | null
+  ): string[] {
+    if (!dateIntent || dateIntent === 'NONE') return [];
+    const chips: string[] = [];
+    if (criteria.pickupDateTime) chips.push(`Pickup ${this.shortDateTime(criteria.pickupDateTime)}`);
+    if (criteria.returnDateTime) chips.push(`Return ${this.shortDateTime(criteria.returnDateTime)}`);
+    return chips;
+  }
+
+  private describeMissingFields(fields: string[]): string[] {
+    return fields.map((field) => {
+      if (field === 'pickupDateTime') return 'Choose a pickup date to search available vehicles.';
+      if (field === 'returnDateTime') return 'Choose a return date to search available vehicles.';
+      return `Complete ${field} before searching.`;
+    });
   }
 
   private buildCriteria(page: number): VehicleSearchCriteria {
@@ -302,6 +353,11 @@ export class MarketplaceSearchComponent implements OnInit {
 
   private label(value: string): string {
     return value.toLowerCase().replace('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  private shortDateTime(value: string): string {
+    const parsed = this.parseDateTime(value, 1);
+    return `${parsed.date.toLocaleDateString()} ${parsed.time}`;
   }
 
   private searchErrorMessage(apiError: { status?: number; error?: { message?: string } }): string {

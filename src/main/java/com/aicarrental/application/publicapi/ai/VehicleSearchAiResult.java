@@ -17,6 +17,10 @@ public record VehicleSearchAiResult(
         String sort,
         String priceIntent,
         String segmentIntent,
+        String dateIntent,
+        String pickupDateHint,
+        String returnDateHint,
+        List<String> missingFields,
         String summary,
         List<String> warnings
 ) {

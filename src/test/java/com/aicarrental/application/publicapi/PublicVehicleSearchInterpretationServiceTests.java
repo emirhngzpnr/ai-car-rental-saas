@@ -2,6 +2,7 @@ package com.aicarrental.application.publicapi;
 
 import com.aicarrental.application.publicapi.ai.PriceIntent;
 import com.aicarrental.application.publicapi.ai.SegmentIntent;
+import com.aicarrental.application.publicapi.ai.DateIntent;
 import com.aicarrental.application.publicapi.ai.VehicleSearchAiClient;
 import com.aicarrental.application.publicapi.ai.VehicleSearchHeuristicInterpreter;
 import com.aicarrental.application.publicapi.ai.VehicleSearchAiResult;
@@ -19,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -180,6 +182,44 @@ class PublicVehicleSearchInterpretationServiceTests {
     }
 
     @Test
+    void interpretsTomorrowAsPickupOnlyAndRequiresReturnDate() {
+        when(aiClient.interpret("yarin icin musait arac")).thenThrow(new IllegalStateException("provider failure"));
+
+        var response = service.interpret("yarin icin musait arac", PICKUP, RETURN, null);
+
+        assertEquals(LocalDateTime.now().plusDays(1).toLocalDate(), response.dateCriteria().pickupDateTime().toLocalDate());
+        assertNull(response.dateCriteria().returnDateTime());
+        assertEquals(List.of("returnDateTime"), response.missingFields());
+        assertEquals(DateIntent.PICKUP_ONLY, response.interpretation().dateIntent());
+    }
+
+    @Test
+    void interpretsTurkishDateRangeWithTimes() {
+        when(aiClient.interpret("yarin 10 pazar 18 otomatik arac")).thenThrow(new IllegalStateException("provider failure"));
+
+        var response = service.interpret("yarin 10 pazar 18 otomatik arac", PICKUP, RETURN, null);
+
+        assertEquals(LocalDateTime.now().plusDays(1).toLocalDate(), response.dateCriteria().pickupDateTime().toLocalDate());
+        assertEquals(10, response.dateCriteria().pickupDateTime().getHour());
+        assertEquals(DayOfWeek.SUNDAY, response.dateCriteria().returnDateTime().getDayOfWeek());
+        assertEquals(18, response.dateCriteria().returnDateTime().getHour());
+        assertEquals(TransmissionType.AUTOMATIC, response.criteria().transmission());
+        assertEquals(DateIntent.DATE_RANGE, response.interpretation().dateIntent());
+    }
+
+    @Test
+    void interpretsWeekendFamilySearch() {
+        when(aiClient.interpret("hafta sonu aile arabasi")).thenThrow(new IllegalStateException("provider failure"));
+
+        var response = service.interpret("hafta sonu aile arabasi", PICKUP, RETURN, null);
+
+        assertEquals(DayOfWeek.SATURDAY, response.dateCriteria().pickupDateTime().getDayOfWeek());
+        assertEquals(DayOfWeek.SUNDAY, response.dateCriteria().returnDateTime().getDayOfWeek());
+        assertEquals(SegmentIntent.FAMILY, response.interpretation().segmentIntent());
+        assertEquals(DateIntent.WEEKEND, response.interpretation().dateIntent());
+    }
+
+    @Test
     void replacesEmptyAiInterpretationWithLocalCheapestIntent() {
         when(aiClient.interpret("en ucuz araba")).thenReturn(result(
                 null, null, null, null, null, null, null, null,
@@ -196,13 +236,13 @@ class PublicVehicleSearchInterpretationServiceTests {
     }
 
     @Test
-    void returnsServiceUnavailableWhenProviderFailsAndNoLocalIntentMatches() {
+    void returnsControlledWarningWhenProviderFailsAndNoLocalIntentMatches() {
         when(aiClient.interpret("surprise me")).thenThrow(new IllegalStateException("provider failure"));
 
-        assertThrows(
-                ServiceUnavailableException.class,
-                () -> service.interpret("surprise me", PICKUP, RETURN, null)
-        );
+        var response = service.interpret("surprise me", PICKUP, RETURN, null);
+
+        assertEquals(2, response.warnings().size());
+        assertEquals("No filters were found in the search request.", response.summary());
     }
 
     @Test
@@ -254,7 +294,8 @@ class PublicVehicleSearchInterpretationServiceTests {
     ) {
         return new VehicleSearchAiResult(
                 minPrice, maxPrice, minKm, brand, model, category, transmission,
-                fuelType, minSeats, location, sort, priceIntent, segmentIntent, summary, warnings
+                fuelType, minSeats, location, sort, priceIntent, segmentIntent,
+                null, null, null, List.of(), summary, warnings
         );
     }
 }
