@@ -23,6 +23,7 @@ public class VehicleSearchHeuristicInterpreter {
         String category = detectCategory(normalized);
         String transmission = detectTransmission(normalized);
         String fuelType = detectFuelType(normalized);
+        String dateIntent = detectDateIntent(normalized);
         Integer minDailyKmLimit = extractInteger(KM_PATTERN, normalized);
         Integer minSeats = extractInteger(SEAT_PATTERN, normalized);
 
@@ -32,6 +33,7 @@ public class VehicleSearchHeuristicInterpreter {
                 || category != null
                 || transmission != null
                 || fuelType != null
+                || dateIntent != null
                 || minDailyKmLimit != null
                 || minSeats != null;
 
@@ -49,6 +51,10 @@ public class VehicleSearchHeuristicInterpreter {
                 sort,
                 priceIntent,
                 segmentIntent,
+                dateIntent,
+                null,
+                null,
+                List.of(),
                 matched ? "Search preferences were interpreted from your request." : null,
                 List.of()
         );
@@ -73,6 +79,10 @@ public class VehicleSearchHeuristicInterpreter {
                 first(ai.sort(), fallback.sort()),
                 first(ai.priceIntent(), fallback.priceIntent()),
                 first(ai.segmentIntent(), fallback.segmentIntent()),
+                first(ai.dateIntent(), fallback.dateIntent()),
+                first(ai.pickupDateHint(), fallback.pickupDateHint()),
+                first(ai.returnDateHint(), fallback.returnDateHint()),
+                ai.missingFields() != null && !ai.missingFields().isEmpty() ? ai.missingFields() : fallback.missingFields(),
                 aiHasCriteria ? first(ai.summary(), fallback.summary()) : fallback.summary(),
                 aiHasCriteria && ai.warnings() != null ? ai.warnings() : fallback.warnings()
         );
@@ -93,6 +103,9 @@ public class VehicleSearchHeuristicInterpreter {
                         || notBlank(result.sort())
                         || notBlank(result.priceIntent())
                         || notBlank(result.segmentIntent())
+                        || notBlank(result.dateIntent())
+                        || notBlank(result.pickupDateHint())
+                        || notBlank(result.returnDateHint())
         );
     }
 
@@ -132,7 +145,7 @@ public class VehicleSearchHeuristicInterpreter {
         if (containsAny(query, "orta segment", "mid range", "mid-range")) {
             return SegmentIntent.MID_RANGE.name();
         }
-        if (containsAny(query, "aile araci", "aile icin", "family car", "for family")) {
+        if (containsAny(query, "aile araci", "aile arabasi", "aile icin", "family car", "for family")) {
             return SegmentIntent.FAMILY.name();
         }
         if (containsAny(query, "genis arac", "ferah", "spacious", "large interior")) {
@@ -143,6 +156,21 @@ public class VehicleSearchHeuristicInterpreter {
         }
         if (containsAny(query, "premium segment", "luks segment", "premium vehicle")) {
             return SegmentIntent.PREMIUM.name();
+        }
+        return null;
+    }
+
+    private String detectDateIntent(String query) {
+        if (containsAny(query, "hafta sonu", "weekend")) {
+            return DateIntent.WEEKEND.name();
+        }
+        if (containsAny(query, "den", "dan", "to", "until", "kadar")) {
+            return DateIntent.DATE_RANGE.name();
+        }
+        if (containsAny(query, "bugun", "today", "yarin", "tomorrow",
+                "pazartesi", "sali", "carsamba", "persembe", "cuma", "cumartesi", "pazar",
+                "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")) {
+            return DateIntent.PICKUP_ONLY.name();
         }
         return null;
     }

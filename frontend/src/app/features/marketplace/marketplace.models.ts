@@ -18,8 +18,8 @@ export interface VehicleSearchCriteria {
 }
 export interface SemanticVehicleSearchRequest {
   query: string;
-  pickupDateTime: string;
-  returnDateTime: string;
+  pickupDateTime?: string;
+  returnDateTime?: string;
   location?: string;
 }
 export interface SemanticVehicleSearchCriteria {
@@ -37,10 +37,16 @@ export interface SemanticVehicleSearchCriteria {
 }
 export interface SemanticVehicleSearchResponse {
   criteria: SemanticVehicleSearchCriteria;
+  dateCriteria: {
+    pickupDateTime: string | null;
+    returnDateTime: string | null;
+  };
   interpretation: {
     priceIntent: string | null;
     segmentIntent: string | null;
+    dateIntent: string | null;
   };
+  missingFields: string[];
   summary: string;
   inferences: string[];
   warnings: string[];
