@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, finalize, firstValueFrom, map, of, shareReplay, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthResponse, AuthSession, LoginRequest, UserRole } from './auth.models';
+import { AuthMessageResponse, AuthResponse, AuthSession, LoginRequest, SetPasswordRequest, UserRole } from './auth.models';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -26,6 +26,12 @@ export class AuthService {
           this.sessionSignal.set(this.toSession(response));
         })
       );
+  }
+
+  setPassword(request: SetPasswordRequest): Observable<AuthMessageResponse> {
+    return this.http.post<AuthMessageResponse>(`${environment.apiUrl}/api/auth/set-password`, request, {
+      withCredentials: true
+    });
   }
 
   refresh(): Observable<AuthSession> {

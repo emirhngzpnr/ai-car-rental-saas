@@ -16,22 +16,29 @@ import com.aicarrental.infrastructure.persistence.TenantRepository;
 import com.aicarrental.infrastructure.persistence.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class UserService {
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final TenantRepository tenantRepository;
     private final AuditEventPublisher auditEventPublisher;
     private final CurrentUserService currentUserService;
+    private final UserInvitationTokenService invitationTokenService;
+    private final UserInvitationEmailService invitationEmailService;
 
     public UserResponse createUser(CreateUserRequest request) {
         User currentUser = currentUserService.getCurrentUser();
@@ -48,7 +55,7 @@ public class UserService {
                 .firstName(request.firstName())
                 .lastName(request.lastName())
                 .email(request.email())
-                .passwordHash(passwordEncoder.encode(request.password()))
+                .passwordHash(passwordEncoder.encode(generateUnusablePassword()))
                 .role(request.role())
                 .active(true)
                 .tenant(tenantToAssign)
@@ -57,6 +64,20 @@ public class UserService {
                 .build();
 
         User savedUser = userRepository.save(user);
+        String rawToken = invitationTokenService.createInvitationToken(savedUser, currentUser);
+        try {
+            invitationEmailService.sendInvitationEmail(savedUser, rawToken);
+        } catch (RuntimeException exception) {
+            log.warn(
+                    "User invitation email could not be sent. userId={}, email={}, tenantId={}",
+                    savedUser.getId(),
+                    savedUser.getEmail(),
+                    tenantToAssign.getId(),
+                    exception
+            );
+            throw new BusinessException("Invitation email could not be sent. Check mail configuration and try again.");
+        }
+
         //                LOG
         auditEventPublisher.publish(new AuditEvent(
                 currentUser.getId(),
@@ -70,6 +91,19 @@ public class UserService {
         ));
 
         return mapToResponse(savedUser);
+    }
+
+    public void setPasswordFromInvitation(String rawToken, String newPassword) {
+        var invitationToken = invitationTokenService.consume(rawToken);
+        User user = invitationToken.getUser();
+
+        if (!Boolean.TRUE.equals(user.getActive())) {
+            throw new BusinessException("Invalid or expired invitation link");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setUpdatedAt(LocalDateTime.now());
+        userRepository.save(user);
     }
 
     public List<UserResponse> getAllUsers() {
@@ -199,6 +233,12 @@ public class UserService {
                 user.getCreatedAt(),
                 user.getUpdatedAt()
         );
+    }
+
+    private String generateUnusablePassword() {
+        byte[] randomBytes = new byte[48];
+        SECURE_RANDOM.nextBytes(randomBytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
     private void validateUserCreationPermission(User currentUser, Role requestedRole) {
 

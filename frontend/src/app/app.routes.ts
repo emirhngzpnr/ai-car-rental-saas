@@ -18,6 +18,10 @@ export const routes: Routes = [
     canActivate: [guestGuard]
   },
   {
+    path: 'set-password',
+    loadComponent: () => import('./features/auth/set-password/set-password.component').then((component) => component.SetPasswordComponent)
+  },
+  {
     path: 'rent',
     component: CustomerShellComponent,
     children: [

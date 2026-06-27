@@ -10,6 +10,16 @@ mat-checkbox {
   grid-column: 1 / -1;
 }
 
+.invitation-note {
+  grid-column: 1 / -1;
+  border: 1px solid #cfe1f5;
+  background: #f4f8fd;
+  color: #385675;
+  border-radius: 6px;
+  padding: 11px 12px;
+  font-size: 13px;
+}
+
 @media (max-width: 720px) {
   .user-form {
     grid-template-columns: 1fr;

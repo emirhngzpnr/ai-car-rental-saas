@@ -60,6 +60,7 @@ MAIL_SMTP_AUTH=true
 MAIL_SMTP_STARTTLS_ENABLE=true
 MAIL_SMTP_STARTTLS_REQUIRED=true
 CUSTOMER_FRONTEND_BASE_URL=http://localhost:4200
+STAFF_FRONTEND_BASE_URL=http://localhost:4200
 ```
 
 When `MAIL_ENABLED=false`, the application uses the logging email sender for local development.
