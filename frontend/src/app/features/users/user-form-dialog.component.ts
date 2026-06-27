@@ -36,7 +36,7 @@ export class UserFormDialogComponent {
     firstName: [this.data.user?.firstName ?? '', [Validators.required]],
     lastName: [this.data.user?.lastName ?? '', [Validators.required]],
     email: [this.data.user?.email ?? '', [Validators.required, Validators.email]],
-    password: ['', this.isEdit ? [Validators.minLength(6)] : [Validators.required, Validators.minLength(6)]],
+    password: ['', this.isEdit ? [Validators.minLength(8)] : []],
     role: [this.data.user?.role ?? this.roleOptions[0], [Validators.required]],
     tenantId: [this.data.user?.tenantId ?? this.data.tenants[0]?.id ?? 0],
     active: [this.data.user?.active ?? true]
@@ -63,7 +63,6 @@ export class UserFormDialogComponent {
           firstName: value.firstName,
           lastName: value.lastName,
           email: value.email,
-          password,
           role: value.role,
           tenantId: this.isSuperAdmin ? value.tenantId : null
         };

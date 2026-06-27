@@ -1,8 +1,11 @@
 package com.aicarrental.api.auth;
 
 import com.aicarrental.api.auth.request.LoginRequest;
+import com.aicarrental.api.auth.request.SetUserPasswordRequest;
 import com.aicarrental.api.auth.response.AuthResponse;
+import com.aicarrental.api.auth.response.AuthMessageResponse;
 import com.aicarrental.application.auth.AuthService;
+import com.aicarrental.application.user.UserService;
 import com.aicarrental.domain.auth.RefreshTokenPrincipalType;
 import com.aicarrental.domain.auth.User;
 import com.aicarrental.infrastructure.persistence.UserRepository;
@@ -29,6 +32,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenCookieService refreshTokenCookieService;
     private final UserRepository userRepository;
+    private final UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
@@ -69,6 +73,14 @@ public class AuthController {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, clearRefreshCookie().toString())
                 .build();
+    }
+
+    @PostMapping("/set-password")
+    public ResponseEntity<AuthMessageResponse> setPassword(
+            @Valid @RequestBody SetUserPasswordRequest request
+    ) {
+        userService.setPasswordFromInvitation(request.token(), request.newPassword());
+        return ResponseEntity.ok(new AuthMessageResponse("Password has been set successfully. You can now sign in."));
     }
 
     private ResponseCookie createRefreshCookie(String refreshToken) {

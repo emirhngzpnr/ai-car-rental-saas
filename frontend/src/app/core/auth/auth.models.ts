@@ -5,6 +5,15 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface SetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface AuthMessageResponse {
+  message: string;
+}
+
 export interface AuthResponse {
   token: string;
   tokenType: string;
