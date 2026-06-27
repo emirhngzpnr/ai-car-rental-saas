@@ -14,4 +14,9 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
             String tokenHash,
             RefreshTokenPrincipalType principalType
     );
+
+    java.util.List<RefreshToken> findByPrincipalTypeAndPrincipalIdAndRevokedAtIsNull(
+            RefreshTokenPrincipalType principalType,
+            Long principalId
+    );
 }

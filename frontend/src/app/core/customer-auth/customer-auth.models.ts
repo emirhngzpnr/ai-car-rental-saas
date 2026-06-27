@@ -11,3 +11,7 @@ export interface CustomerSession extends CustomerAuthResponse {}
 export interface CustomerRegisterRequest { firstName: string; lastName: string; email: string; password: string; phone: string; }
 export interface CustomerLoginRequest { email: string; password: string; }
 export interface CustomerProfile { id: number; firstName: string; lastName: string; email: string; phone: string; }
+export interface CustomerRegistrationResponse { email: string; message: string; verificationRequired: boolean; }
+export interface CustomerMessageResponse { message: string; }
+export interface CustomerEmailRequest { email: string; }
+export interface CustomerResetPasswordRequest { token: string; newPassword: string; }

@@ -34,6 +34,9 @@ export const routes: Routes = [
     children: [
       { path: 'login', data: { mode: 'login' }, loadComponent: () => import('./features/customer-account/customer-access.component').then(c => c.CustomerAccessComponent) },
       { path: 'register', data: { mode: 'register' }, loadComponent: () => import('./features/customer-account/customer-access.component').then(c => c.CustomerAccessComponent) },
+      { path: 'verify-email', loadComponent: () => import('./features/customer-account/customer-verify-email.component').then(c => c.CustomerVerifyEmailComponent) },
+      { path: 'forgot-password', loadComponent: () => import('./features/customer-account/customer-forgot-password.component').then(c => c.CustomerForgotPasswordComponent) },
+      { path: 'reset-password', loadComponent: () => import('./features/customer-account/customer-reset-password.component').then(c => c.CustomerResetPasswordComponent) },
       { path: 'account/profile', canActivate: [customerAuthGuard], loadComponent: () => import('./features/customer-account/customer-profile.component').then(c => c.CustomerProfileComponent) },
       { path: 'account/reservations', canActivate: [customerAuthGuard], loadComponent: () => import('./features/customer-account/customer-reservations.component').then(c => c.CustomerReservationsComponent) },
       { path: 'account/reservations/:reservationCode', canActivate: [customerAuthGuard], loadComponent: () => import('./features/customer-account/customer-reservation-detail.component').then(c => c.CustomerReservationDetailComponent) }

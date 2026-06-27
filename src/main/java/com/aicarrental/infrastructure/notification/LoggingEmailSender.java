@@ -1,19 +1,18 @@
 package com.aicarrental.infrastructure.notification;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class MockEmailSenderService {
-    public void sendEmail(
-            String recipient,
-            String subject,
-            String message
-    ) {
+@ConditionalOnProperty(name = "app.mail.enabled", havingValue = "false", matchIfMissing = true)
+public class LoggingEmailSender implements EmailSender {
+    @Override
+    public void sendEmail(String recipient, String subject, String message) {
         log.info("""
                         
-                MOCK EMAIL SENT
+                EMAIL DELIVERY DISABLED
                 TO: {}
                 SUBJECT: {}
                 MESSAGE: {}

@@ -45,6 +45,25 @@ Set `SPRING_PROFILES_ACTIVE=local` for local development if you want demo seed d
 deployments must set an explicit non-local profile and must not rely on a default `dev` profile.
 Set `CORS_ALLOWED_ORIGINS` to the exact frontend origin for the target environment.
 
+Customer email verification and password reset emails can be tested with Gmail SMTP. Enable
+2-Step Verification on the Gmail account, create a Gmail App Password, and put the app password
+in `.env`; do not use or commit the normal Gmail password.
+
+```properties
+MAIL_ENABLED=true
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_gmail_address@gmail.com
+MAIL_PASSWORD=your_gmail_app_password
+MAIL_FROM=your_gmail_address@gmail.com
+MAIL_SMTP_AUTH=true
+MAIL_SMTP_STARTTLS_ENABLE=true
+MAIL_SMTP_STARTTLS_REQUIRED=true
+CUSTOMER_FRONTEND_BASE_URL=http://localhost:4200
+```
+
+When `MAIL_ENABLED=false`, the application uses the logging email sender for local development.
+
 ## Run Locally
 
 Start PostgreSQL, Kafka, Kafka UI, and Redis:
@@ -139,11 +158,11 @@ Docker must be running for the backend integration test.
 ## Current Integration Boundaries
 
 - Deposit and refund processing use a mock payment provider.
-- Notification delivery uses a mock email sender.
+- Email delivery is interface based. Local development can log emails, while Gmail SMTP can be enabled through environment variables for testable customer verification and password reset flows.
 - Staff and customer access tokens are kept in browser memory and renewed through separate rotating HttpOnly refresh cookies.
 - The example access-token lifetime is 15 minutes; refresh sessions default to seven days.
 - For HTTPS production deployments, set `AUTH_REFRESH_COOKIE_SECURE=true`. Cross-site frontend/backend deployments also require a compatible `AUTH_REFRESH_COOKIE_SAME_SITE` value and an exact credentialed CORS origin.
 - Marketplace customers can describe vehicle preferences in Turkish or English. AI extracts semantic price and segment intent, while PostgreSQL applies availability, tenant safety, category and live price-percentile filters.
 - Relative expressions such as "not too expensive" use the current matching fleet price distribution; explicit numeric price limits always take priority.
-- Customer email verification and password reset remain planned production work.
+- Customer accounts require email verification before login and support password reset through single-use emailed links.
 - Gemini is optional at runtime only where rule-based fallback behavior is available.
