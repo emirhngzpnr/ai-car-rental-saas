@@ -3,6 +3,7 @@ package com.aicarrental.application.publicapi;
 import com.aicarrental.common.exception.BusinessException;
 import com.aicarrental.infrastructure.persistence.InsurancePackageRepository;
 import com.aicarrental.infrastructure.persistence.VehicleRepository;
+import com.aicarrental.infrastructure.persistence.VehicleReviewRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,11 +19,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class PublicMarketplaceServiceTests {
     @Mock VehicleRepository vehicleRepository;
     @Mock InsurancePackageRepository insurancePackageRepository;
+    @Mock VehicleReviewRepository vehicleReviewRepository;
     private PublicMarketplaceService service;
 
     @BeforeEach
     void setUp() {
-        service = new PublicMarketplaceService(vehicleRepository, insurancePackageRepository);
+        service = new PublicMarketplaceService(vehicleRepository, insurancePackageRepository, vehicleReviewRepository);
     }
 
     @Test

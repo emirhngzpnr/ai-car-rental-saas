@@ -251,7 +251,37 @@
 
 .vehicle-body h2 {
   font-size: 19px;
-  margin: 5px 0 12px;
+  margin: 5px 0 8px;
+}
+
+.rating-summary {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #40516a;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.rating-summary--empty {
+  color: var(--acr-text-muted);
+}
+
+.rating-score {
+  background: #fff7e6;
+  border: 1px solid #f1dfb8;
+  border-radius: 4px;
+  color: #8a5a12;
+  font-weight: 700;
+  line-height: 1;
+  padding: 5px 7px;
+}
+
+.rating-summary--empty .rating-score {
+  background: #f4f6f8;
+  border-color: #e2e7ee;
+  color: #6b7788;
 }
 
 .meta {

@@ -2,7 +2,9 @@ package com.aicarrental.api.publicapi;
 
 import com.aicarrental.api.publicapi.response.PublicMarketplaceSearchResponse;
 import com.aicarrental.api.publicapi.response.PublicMarketplaceVehicleDetailResponse;
+import com.aicarrental.api.publicapi.response.PublicVehicleReviewPageResponse;
 import com.aicarrental.application.publicapi.PublicMarketplaceService;
+import com.aicarrental.application.publicapi.PublicVehicleReviewService;
 import com.aicarrental.domain.vehicle.FuelType;
 import com.aicarrental.domain.vehicle.TransmissionType;
 import com.aicarrental.domain.vehicle.VehicleCategory;
@@ -24,6 +26,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PublicMarketplaceController {
     private final PublicMarketplaceService marketplaceService;
+    private final PublicVehicleReviewService reviewService;
 
     @GetMapping
     public ResponseEntity<PublicMarketplaceSearchResponse> search(
@@ -54,5 +57,14 @@ public class PublicMarketplaceController {
     @GetMapping("/{vehicleId}")
     public ResponseEntity<PublicMarketplaceVehicleDetailResponse> getVehicle(@PathVariable Long vehicleId) {
         return ResponseEntity.ok(marketplaceService.getVehicle(vehicleId));
+    }
+
+    @GetMapping("/{vehicleId}/reviews")
+    public ResponseEntity<PublicVehicleReviewPageResponse> getReviews(
+            @PathVariable Long vehicleId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size
+    ) {
+        return ResponseEntity.ok(reviewService.getReviews(vehicleId, page, size));
     }
 }

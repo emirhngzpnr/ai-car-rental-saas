@@ -21,6 +21,8 @@ public record PublicMarketplaceVehicleDetailResponse(
         Integer seatCount,
         String location,
         String imageUrl,
+        BigDecimal averageRating,
+        Long reviewCount,
         List<PublicInsurancePackageResponse> insurancePackages
 ) {
 }

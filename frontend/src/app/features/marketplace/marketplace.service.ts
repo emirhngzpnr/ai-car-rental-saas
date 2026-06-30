@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CustomerProfile } from '../../core/customer-auth/customer-auth.models';
-import { CustomerReservation, MarketplaceSearchResponse, MarketplaceVehicleDetail, ReservationResponse, SemanticVehicleSearchRequest, SemanticVehicleSearchResponse, TrackingResponse, VehicleSearchCriteria } from './marketplace.models';
+import { CustomerReservation, CustomerVehicleReview, MarketplaceSearchResponse, MarketplaceVehicleDetail, ReservationResponse, SemanticVehicleSearchRequest, SemanticVehicleSearchResponse, TrackingResponse, VehicleReviewPage, VehicleReviewRequest, VehicleSearchCriteria } from './marketplace.models';
 
 @Injectable({ providedIn: 'root' })
 export class MarketplaceService {
@@ -30,6 +30,9 @@ export class MarketplaceService {
   getVehicle(id: number): Observable<MarketplaceVehicleDetail> {
     return this.http.get<MarketplaceVehicleDetail>(`${environment.apiUrl}/api/public/marketplace/vehicles/${id}`);
   }
+  getVehicleReviews(id: number, page = 0, size = 5): Observable<VehicleReviewPage> {
+    return this.http.get<VehicleReviewPage>(`${environment.apiUrl}/api/public/marketplace/vehicles/${id}/reviews`, { params: { page, size } });
+  }
   createGuestReservation(tenantSlug: string, request: object): Observable<ReservationResponse> {
     return this.http.post<ReservationResponse>(`${environment.apiUrl}/api/public/tenants/${tenantSlug}/reservations`, request);
   }
@@ -49,4 +52,8 @@ export class MarketplaceService {
   updateProfile(request: object): Observable<CustomerProfile> { return this.http.put<CustomerProfile>(`${environment.apiUrl}/api/customer/me`, request); }
   customerReservations(): Observable<CustomerReservation[]> { return this.http.get<CustomerReservation[]>(`${environment.apiUrl}/api/customer/reservations`); }
   customerReservation(code: string): Observable<CustomerReservation> { return this.http.get<CustomerReservation>(`${environment.apiUrl}/api/customer/reservations/${code}`); }
+  getCustomerReview(code: string): Observable<CustomerVehicleReview> { return this.http.get<CustomerVehicleReview>(`${environment.apiUrl}/api/customer/reservations/${code}/review`); }
+  createCustomerReview(code: string, request: VehicleReviewRequest): Observable<CustomerVehicleReview> { return this.http.post<CustomerVehicleReview>(`${environment.apiUrl}/api/customer/reservations/${code}/review`, request); }
+  updateCustomerReview(code: string, request: VehicleReviewRequest): Observable<CustomerVehicleReview> { return this.http.put<CustomerVehicleReview>(`${environment.apiUrl}/api/customer/reservations/${code}/review`, request); }
+  deleteCustomerReview(code: string): Observable<void> { return this.http.delete<void>(`${environment.apiUrl}/api/customer/reservations/${code}/review`); }
 }

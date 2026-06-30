@@ -55,7 +55,7 @@ export interface MarketplaceVehicle {
   vehicleId: number; tenantSlug: string; tenantName: string; brand: string; model: string;
   productionYear: number; dailyPrice: number; dailyKmLimit: number; extraKmPricePerKm: number;
   category: string | null; transmission: string | null; fuelType: string | null; seatCount: number | null;
-  location: string | null; imageUrl: string | null;
+  location: string | null; imageUrl: string | null; averageRating: number; reviewCount: number;
 }
 export interface InsurancePackage { id: number; type: string; name: string; coverageDescription: string; dailyPrice: number; }
 export interface MarketplaceVehicleDetail extends MarketplaceVehicle {
@@ -77,3 +77,14 @@ export interface CustomerReservation {
   depositAmount: number; estimatedRentalPrice: number; insuranceTotalPrice: number | null;
   totalEstimatedPrice: number; paymentStatusSummary: string;
 }
+export interface VehicleReview {
+  id: number; rating: number; title: string | null; comment: string; customerDisplayName: string; createdAt: string;
+}
+export interface VehicleReviewPage {
+  content: VehicleReview[]; page: number; size: number; totalElements: number; totalPages: number;
+}
+export interface CustomerVehicleReview {
+  id: number; reservationCode: string; vehicleId: number; vehicleBrand: string; vehicleModel: string;
+  rating: number; title: string | null; comment: string; createdAt: string; updatedAt: string;
+}
+export interface VehicleReviewRequest { rating: number; title?: string | null; comment: string; }
