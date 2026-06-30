@@ -25,6 +25,24 @@ public interface RentalRepository extends JpaRepository<Rental, Long>{
 
     Optional<Rental> findByIdAndTenant_IdAndActiveTrue(Long id, Long tenantId);
 
+    @Query("""
+        SELECT r
+        FROM Rental r
+        JOIN FETCH r.reservation res
+        JOIN FETCH r.vehicle v
+        JOIN FETCH r.tenant t
+        WHERE res.reservationCode = :reservationCode
+          AND res.customerAccount.id = :customerAccountId
+          AND res.active = true
+          AND r.active = true
+          AND r.status = com.aicarrental.domain.rental.RentalStatus.COMPLETED
+          AND res.status = com.aicarrental.domain.reservation.ReservationStatus.COMPLETED
+        """)
+    Optional<Rental> findCompletedCustomerRentalForReview(
+            @Param("reservationCode") String reservationCode,
+            @Param("customerAccountId") Long customerAccountId
+    );
+
     Long countByTenant_IdAndStatus(Long tenantId, RentalStatus status);
 
     Long countByStatus(RentalStatus status);

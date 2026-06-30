@@ -12,6 +12,8 @@ import com.aicarrental.domain.vehicle.Vehicle;
 import com.aicarrental.domain.vehicle.VehicleCategory;
 import com.aicarrental.infrastructure.persistence.InsurancePackageRepository;
 import com.aicarrental.infrastructure.persistence.VehicleRepository;
+import com.aicarrental.infrastructure.persistence.VehicleReviewRepository;
+import com.aicarrental.infrastructure.persistence.projection.VehicleReviewSummaryProjection;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,10 +22,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +37,7 @@ import java.util.List;
 public class PublicMarketplaceService {
     private final VehicleRepository vehicleRepository;
     private final InsurancePackageRepository insurancePackageRepository;
+    private final VehicleReviewRepository reviewRepository;
 
     public PublicMarketplaceSearchResponse search(
             LocalDateTime pickupDateTime,
@@ -79,8 +86,12 @@ public class PublicMarketplaceService {
                 pageable
         );
 
+        Map<Long, VehicleReviewSummaryProjection> summaries = reviewSummaries(
+                result.getContent().stream().map(Vehicle::getId).toList()
+        );
+
         return new PublicMarketplaceSearchResponse(
-                result.getContent().stream().map(this::mapVehicle).toList(),
+                result.getContent().stream().map(vehicle -> mapVehicle(vehicle, summaries)).toList(),
                 result.getNumber(),
                 result.getSize(),
                 result.getTotalElements(),
@@ -121,6 +132,8 @@ public class PublicMarketplaceService {
                 ))
                 .toList();
 
+        VehicleReviewSummaryProjection summary = reviewSummaries(List.of(vehicle.getId())).get(vehicle.getId());
+
         return new PublicMarketplaceVehicleDetailResponse(
                 vehicle.getId(),
                 vehicle.getTenant().getSlug(),
@@ -139,11 +152,17 @@ public class PublicMarketplaceService {
                 vehicle.getSeatCount(),
                 vehicle.getLocation(),
                 vehicle.getImageUrl(),
+                averageRating(summary),
+                reviewCount(summary),
                 packages
         );
     }
 
-    private PublicMarketplaceVehicleResponse mapVehicle(Vehicle vehicle) {
+    private PublicMarketplaceVehicleResponse mapVehicle(
+            Vehicle vehicle,
+            Map<Long, VehicleReviewSummaryProjection> summaries
+    ) {
+        VehicleReviewSummaryProjection summary = summaries.get(vehicle.getId());
         return new PublicMarketplaceVehicleResponse(
                 vehicle.getId(),
                 vehicle.getTenant().getSlug(),
@@ -159,8 +178,30 @@ public class PublicMarketplaceService {
                 name(vehicle.getFuelType()),
                 vehicle.getSeatCount(),
                 vehicle.getLocation(),
-                vehicle.getImageUrl()
+                vehicle.getImageUrl(),
+                averageRating(summary),
+                reviewCount(summary)
         );
+    }
+
+    private Map<Long, VehicleReviewSummaryProjection> reviewSummaries(List<Long> vehicleIds) {
+        if (vehicleIds.isEmpty()) {
+            return Map.of();
+        }
+        return reviewRepository.summarizeByVehicleIds(vehicleIds)
+                .stream()
+                .collect(Collectors.toMap(VehicleReviewSummaryProjection::getVehicleId, Function.identity()));
+    }
+
+    private BigDecimal averageRating(VehicleReviewSummaryProjection summary) {
+        if (summary == null || summary.getAverageRating() == null) {
+            return BigDecimal.ZERO.setScale(1, RoundingMode.HALF_UP);
+        }
+        return BigDecimal.valueOf(summary.getAverageRating()).setScale(1, RoundingMode.HALF_UP);
+    }
+
+    private Long reviewCount(VehicleReviewSummaryProjection summary) {
+        return summary == null || summary.getReviewCount() == null ? 0L : summary.getReviewCount();
     }
 
     private void validateFilters(BigDecimal minPrice, BigDecimal maxPrice, Integer minKm, Integer minSeats) {

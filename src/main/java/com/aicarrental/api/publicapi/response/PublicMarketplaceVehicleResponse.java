@@ -17,6 +17,8 @@ public record PublicMarketplaceVehicleResponse(
         String fuelType,
         Integer seatCount,
         String location,
-        String imageUrl
+        String imageUrl,
+        BigDecimal averageRating,
+        Long reviewCount
 ) {
 }

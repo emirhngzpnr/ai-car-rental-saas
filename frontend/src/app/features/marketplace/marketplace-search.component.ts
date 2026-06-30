@@ -1,4 +1,5 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -27,6 +28,7 @@ import { MarketplaceService } from './marketplace.service';
   selector: 'acr-marketplace-search',
   imports: [
     ReactiveFormsModule,
+    DecimalPipe,
     RouterLink,
     MatButtonModule,
     MatDatepickerModule,

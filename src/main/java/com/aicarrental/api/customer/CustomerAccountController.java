@@ -3,16 +3,20 @@ package com.aicarrental.api.customer;
 import com.aicarrental.api.customer.request.CustomerCreateReservationRequest;
 import com.aicarrental.api.customer.request.CustomerDepositPaymentRequest;
 import com.aicarrental.api.customer.request.CustomerProfileUpdateRequest;
+import com.aicarrental.api.customer.request.CustomerVehicleReviewRequest;
 import com.aicarrental.api.customer.response.CustomerProfileResponse;
 import com.aicarrental.api.customer.response.CustomerReservationResponse;
+import com.aicarrental.api.customer.response.CustomerVehicleReviewResponse;
 import com.aicarrental.api.publicapi.response.PublicDepositPaymentResponse;
 import com.aicarrental.api.publicapi.response.PublicReservationResponse;
 import com.aicarrental.application.customer.CustomerProfileService;
 import com.aicarrental.application.customer.CustomerReservationService;
+import com.aicarrental.application.customer.CustomerVehicleReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,6 +33,7 @@ import java.util.List;
 public class CustomerAccountController {
     private final CustomerProfileService profileService;
     private final CustomerReservationService reservationService;
+    private final CustomerVehicleReviewService reviewService;
 
     @GetMapping("/me")
     public ResponseEntity<CustomerProfileResponse> profile() {
@@ -65,5 +70,36 @@ public class CustomerAccountController {
             @Valid @RequestBody CustomerDepositPaymentRequest request
     ) {
         return ResponseEntity.ok(reservationService.payDeposit(reservationCode, request.idempotencyKey()));
+    }
+
+    @GetMapping("/reservations/{reservationCode}/review")
+    public ResponseEntity<CustomerVehicleReviewResponse> getReview(
+            @PathVariable String reservationCode
+    ) {
+        return ResponseEntity.ok(reviewService.getOwnReview(reservationCode));
+    }
+
+    @PostMapping("/reservations/{reservationCode}/review")
+    public ResponseEntity<CustomerVehicleReviewResponse> createReview(
+            @PathVariable String reservationCode,
+            @Valid @RequestBody CustomerVehicleReviewRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(reviewService.create(reservationCode, request));
+    }
+
+    @PutMapping("/reservations/{reservationCode}/review")
+    public ResponseEntity<CustomerVehicleReviewResponse> updateReview(
+            @PathVariable String reservationCode,
+            @Valid @RequestBody CustomerVehicleReviewRequest request
+    ) {
+        return ResponseEntity.ok(reviewService.update(reservationCode, request));
+    }
+
+    @DeleteMapping("/reservations/{reservationCode}/review")
+    public ResponseEntity<Void> deleteReview(@PathVariable String reservationCode) {
+        reviewService.delete(reservationCode);
+        return ResponseEntity.noContent().build();
     }
 }
