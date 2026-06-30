@@ -20,7 +20,7 @@ import { MarketplaceService } from './marketplace.service';
       <section class="checkout-panel"><h1>Complete your reservation</h1><p class="lead">Review the rental period and provide the driver information.</p>
         @if(error()){<div class="error">{{error()}}</div>}
         @if(reservation();as booked){
-          <div class="reserved"><mat-icon>check_circle</mat-icon><div><h2>Reservation created</h2><p>Reference: <strong>{{booked.reservationCode}}</strong></p><p>Your vehicle is held pending the deposit payment.</p></div></div>
+          <div class="reserved"><mat-icon>check_circle</mat-icon><div><h2>Reservation created</h2><p>Reference: <strong>{{booked.reservationCode}}</strong></p><p>Your vehicle is held pending the demo deposit payment. No real card will be charged.</p></div></div>
           <button mat-flat-button color="primary" class="pay" (click)="payDeposit()" [disabled]="paying()">{{paying()?'Processing...':'Pay '+money(booked.depositAmount)+' deposit'}}</button>
         }@else{
           @if(auth.isAuthenticated()){<div class="account-note"><mat-icon>account_circle</mat-icon><span>Booking as <strong>{{auth.session()?.email}}</strong></span></div>}@else{<div class="guest-note"><span>Continue as guest, or</span><a routerLink="/customer/login" [queryParams]="{returnUrl:currentUrl}">sign in</a><span>to keep this booking in your account.</span></div>}

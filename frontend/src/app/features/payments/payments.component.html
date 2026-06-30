@@ -14,7 +14,7 @@
     <section class="acr-panel result-panel">
       <div>
         <strong>Payment completed</strong>
-        <span>#{{ payment.id }} - {{ payment.paymentType }} - {{ money(payment.amount) }} {{ payment.currency }}</span>
+        <span>#{{ payment.id }} - {{ payment.providerName }} provider - {{ payment.paymentType }} - {{ money(payment.amount) }} {{ payment.currency }}</span>
       </div>
       <acr-status-badge [status]="payment.paymentStatus" />
     </section>
@@ -30,7 +30,7 @@
         <div class="panel-heading">
           <div>
             <h2>Deposit payments</h2>
-            <span>Pending reservation deposits ready for mock provider processing.</span>
+            <span>Pending reservation deposits ready for demo provider processing. No real card will be charged.</span>
           </div>
         </div>
 

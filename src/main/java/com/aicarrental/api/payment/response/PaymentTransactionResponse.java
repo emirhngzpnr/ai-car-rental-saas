@@ -22,6 +22,8 @@ public record PaymentTransactionResponse(Long id,
 
                                          String currency,
 
+                                         String providerName,
+
                                          String providerTransactionId,
 
                                          String idempotencyKey,

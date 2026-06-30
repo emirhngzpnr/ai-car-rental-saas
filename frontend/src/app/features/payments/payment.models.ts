@@ -19,6 +19,7 @@ export interface PaymentTransactionResponse {
   paymentStatus: PaymentStatus;
   amount: number;
   currency: string;
+  providerName: string;
   providerTransactionId: string;
   idempotencyKey: string;
   createdAt: string;

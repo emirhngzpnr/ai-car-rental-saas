@@ -3,6 +3,9 @@ package com.aicarrental.application.payment;
 import com.aicarrental.api.payment.request.CreatePaymentRequest;
 import com.aicarrental.api.payment.response.PaymentTransactionResponse;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.payment.provider.DemoPaymentProvider;
+import com.aicarrental.application.payment.provider.PaymentProvider;
+import com.aicarrental.application.payment.provider.PaymentProviderResult;
 import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
@@ -41,6 +44,7 @@ public class PaymentTransactionService {
     private final CurrentUserService currentUserService;
     private final OutboxMessageService outboxMessageService;
     private final ReportCacheInvalidator reportCacheInvalidator;
+    private final PaymentProvider paymentProvider;
 
     public PaymentTransactionResponse createPayment(CreatePaymentRequest request) {
 
@@ -90,6 +94,7 @@ public class PaymentTransactionService {
             }
         }
         LocalDateTime now = LocalDateTime.now();
+        PaymentProviderResult providerResult = processWithProvider(request);
 
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
                 .tenant(tenant)
@@ -98,7 +103,7 @@ public class PaymentTransactionService {
                 .paymentStatus(PaymentStatus.SUCCESS)
                 .amount(request.amount())
                 .currency("TRY")
-                .providerTransactionId("MOCK-" + System.currentTimeMillis())
+                .providerTransactionId(providerResult.providerTransactionId())
                 .idempotencyKey(request.idempotencyKey())
                 .createdAt(now)
                 .updatedAt(now)
@@ -164,10 +169,19 @@ public class PaymentTransactionService {
                 paymentTransaction.getPaymentStatus(),
                 paymentTransaction.getAmount(),
                 paymentTransaction.getCurrency(),
+                DemoPaymentProvider.PROVIDER_NAME,
                 paymentTransaction.getProviderTransactionId(),
                 paymentTransaction.getIdempotencyKey(),
                 paymentTransaction.getCreatedAt(),
                 paymentTransaction.getUpdatedAt()
         );
+    }
+
+    private PaymentProviderResult processWithProvider(CreatePaymentRequest request) {
+        if (request.paymentType() == PaymentType.DEPOSIT_PAYMENT) {
+            return paymentProvider.chargeDeposit(request.amount(), "TRY", request.idempotencyKey());
+        }
+
+        return paymentProvider.chargeRentalPayment(request.amount(), "TRY", request.idempotencyKey());
     }
 }

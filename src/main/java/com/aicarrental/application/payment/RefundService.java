@@ -1,5 +1,7 @@
 package com.aicarrental.application.payment;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.payment.provider.PaymentProvider;
+import com.aicarrental.application.payment.provider.PaymentProviderResult;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
 import com.aicarrental.common.audit.AuditEventPublisher;
@@ -24,6 +26,7 @@ public class RefundService {
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final OutboxMessageService outboxMessageService;
     private final AuditEventPublisher auditEventPublisher;
+    private final PaymentProvider paymentProvider;
 
     public void createRefundForCompletedRental(Rental rental) {
 
@@ -44,6 +47,12 @@ public class RefundService {
         }
 
         LocalDateTime now = LocalDateTime.now();
+        String idempotencyKey = "refund-rental-" + rental.getId();
+        PaymentProviderResult providerResult = paymentProvider.refund(
+                rental.getRefundAmount(),
+                "TRY",
+                idempotencyKey
+        );
 
         PaymentTransaction refundPayment =
                 PaymentTransaction.builder()
@@ -54,8 +63,8 @@ public class RefundService {
                         .paymentStatus(PaymentStatus.REFUNDED)
                         .amount(rental.getRefundAmount())
                         .currency("TRY")
-                        .providerTransactionId("MOCK-REFUND-" + System.currentTimeMillis())
-                        .idempotencyKey("refund-rental-" + rental.getId())
+                        .providerTransactionId(providerResult.providerTransactionId())
+                        .idempotencyKey(idempotencyKey)
                         .createdAt(now)
                         .updatedAt(now)
                         .build();

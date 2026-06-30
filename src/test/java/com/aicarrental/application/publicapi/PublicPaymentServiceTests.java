@@ -2,6 +2,7 @@ package com.aicarrental.application.publicapi;
 
 import com.aicarrental.api.publicapi.request.PublicDepositPaymentRequest;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.payment.provider.PaymentProvider;
 import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditEventPublisher;
 import com.aicarrental.common.exception.BusinessException;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,6 +32,7 @@ class PublicPaymentServiceTests {
     @Mock OutboxMessageService outboxMessageService;
     @Mock AuditEventPublisher auditEventPublisher;
     @Mock ReportCacheInvalidator reportCacheInvalidator;
+    @Mock PaymentProvider paymentProvider;
 
     private PublicPaymentService service;
 
@@ -41,7 +44,8 @@ class PublicPaymentServiceTests {
                 reservationRepository,
                 outboxMessageService,
                 auditEventPublisher,
-                reportCacheInvalidator
+                reportCacheInvalidator,
+                paymentProvider
         );
     }
 
@@ -77,6 +81,11 @@ class PublicPaymentServiceTests {
                 "fastcar",
                 "RNT-2026-000011",
                 "customer@example.com"
+        );
+        verify(paymentProvider, never()).chargeDeposit(
+                org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyString()
         );
     }
 }
