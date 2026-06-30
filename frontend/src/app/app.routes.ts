@@ -2,13 +2,6 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { guestGuard } from './core/auth/guest.guard';
 import { roleGuard } from './core/auth/role.guard';
-import { AppShellComponent } from './layout/app-shell/app-shell.component';
-import { DashboardComponent } from './features/dashboard/dashboard.component';
-import { VehiclesComponent } from './features/vehicles/vehicles.component';
-import { ReservationsComponent } from './features/reservations/reservations.component';
-import { RentalsComponent } from './features/rentals/rentals.component';
-import { PaymentsComponent } from './features/payments/payments.component';
-import { CustomerShellComponent } from './layout/customer-shell/customer-shell.component';
 import { customerAuthGuard } from './core/customer-auth/customer-auth.guard';
 
 export const routes: Routes = [
@@ -23,7 +16,7 @@ export const routes: Routes = [
   },
   {
     path: 'rent',
-    component: CustomerShellComponent,
+    loadComponent: () => import('./layout/customer-shell/customer-shell.component').then(c => c.CustomerShellComponent),
     children: [
       { path: '', loadComponent: () => import('./features/marketplace/marketplace-search.component').then(c => c.MarketplaceSearchComponent) },
       { path: 'vehicles/:vehicleId', loadComponent: () => import('./features/marketplace/marketplace-detail.component').then(c => c.MarketplaceDetailComponent) },
@@ -34,7 +27,7 @@ export const routes: Routes = [
   },
   {
     path: 'customer',
-    component: CustomerShellComponent,
+    loadComponent: () => import('./layout/customer-shell/customer-shell.component').then(c => c.CustomerShellComponent),
     children: [
       { path: 'login', data: { mode: 'login' }, loadComponent: () => import('./features/customer-account/customer-access.component').then(c => c.CustomerAccessComponent) },
       { path: 'register', data: { mode: 'register' }, loadComponent: () => import('./features/customer-account/customer-access.component').then(c => c.CustomerAccessComponent) },
@@ -48,14 +41,29 @@ export const routes: Routes = [
   },
   {
     path: 'app',
-    component: AppShellComponent,
+    loadComponent: () => import('./layout/app-shell/app-shell.component').then((component) => component.AppShellComponent),
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'vehicles', component: VehiclesComponent },
-      { path: 'reservations', component: ReservationsComponent },
-      { path: 'rentals', component: RentalsComponent },
-      { path: 'payments', component: PaymentsComponent },
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dashboard/dashboard.component').then((component) => component.DashboardComponent)
+      },
+      {
+        path: 'vehicles',
+        loadComponent: () => import('./features/vehicles/vehicles.component').then((component) => component.VehiclesComponent)
+      },
+      {
+        path: 'reservations',
+        loadComponent: () => import('./features/reservations/reservations.component').then((component) => component.ReservationsComponent)
+      },
+      {
+        path: 'rentals',
+        loadComponent: () => import('./features/rentals/rentals.component').then((component) => component.RentalsComponent)
+      },
+      {
+        path: 'payments',
+        loadComponent: () => import('./features/payments/payments.component').then((component) => component.PaymentsComponent)
+      },
       {
         path: 'invoices',
         loadComponent: () => import('./features/invoices/invoices.component').then((component) => component.InvoicesComponent)

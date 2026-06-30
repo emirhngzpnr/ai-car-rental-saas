@@ -28,6 +28,9 @@ date overlap, insurance, and payment idempotency rules.
 Domain events are written to the outbox in the same transaction as business state. A scheduler
 publishes pending messages to Kafka, where notification and downstream consumers process them.
 
+For a portfolio-oriented technical summary, see
+[`docs/portfolio-architecture-notes.md`](docs/portfolio-architecture-notes.md).
+
 ## Prerequisites
 
 - Java 17 or newer
