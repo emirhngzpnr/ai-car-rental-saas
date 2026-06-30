@@ -4,6 +4,10 @@ Multi-tenant vehicle rental platform with staff operations, a public customer ma
 AI-assisted pricing, reservation and rental workflows, payments, invoices, notifications,
 and event-driven processing.
 
+This repository is a computer engineering portfolio/demo project. It is designed to show
+production-style architecture and operational workflows without processing real customer
+payments or exposing public admin credentials.
+
 ## Technology Stack
 
 - Backend: Java 17, Spring Boot, Spring Security, Spring Data JPA
@@ -41,9 +45,10 @@ Compose also uses the same file for PostgreSQL configuration.
 Generate a JWT secret containing at least 32 random bytes and store its Base64 representation in
 `JWT_SECRET`. Never commit real credentials or API keys.
 
-Set `SPRING_PROFILES_ACTIVE=local` for local development if you want demo seed data. Production
+Set `SPRING_PROFILES_ACTIVE=local` for local development if you want demo seed data. Public demo
 deployments must set an explicit non-local profile and must not rely on a default `dev` profile.
-Set `CORS_ALLOWED_ORIGINS` to the exact frontend origin for the target environment.
+Set `CORS_ALLOWED_ORIGINS` to the exact frontend origin for the target environment. Do not publish
+staff/admin credentials in public demo environments.
 
 Customer email verification and password reset emails can be tested with Gmail SMTP. Enable
 2-Step Verification on the Gmail account, create a Gmail App Password, and put the app password
@@ -61,9 +66,13 @@ MAIL_SMTP_STARTTLS_ENABLE=true
 MAIL_SMTP_STARTTLS_REQUIRED=true
 CUSTOMER_FRONTEND_BASE_URL=http://localhost:4200
 STAFF_FRONTEND_BASE_URL=http://localhost:4200
+SPRINGDOC_API_DOCS_ENABLED=true
+SPRINGDOC_SWAGGER_UI_ENABLED=true
 ```
 
 When `MAIL_ENABLED=false`, the application uses the logging email sender for local development.
+API docs are enabled by the local profile and disabled by default in the base configuration; keep
+them disabled or protected in public demo deployments.
 
 ## Run Locally
 
@@ -79,8 +88,9 @@ Start the backend from the repository root:
 .\mvnw.cmd spring-boot:run
 ```
 
-The local backend runs at `http://localhost:8080`. Swagger UI is available at
-`http://localhost:8080/swagger-ui/index.html`, and Kafka UI at `http://localhost:8085`.
+The local backend runs at `http://localhost:8080`. With the `local` profile, Swagger UI is
+available at `http://localhost:8080/swagger-ui/index.html`, and Kafka UI at
+`http://localhost:8085`.
 
 Start the Angular frontend in a second terminal:
 
@@ -99,7 +109,7 @@ The frontend runs at `http://localhost:4200`.
 1. Open `/rent` and choose pickup and return dates.
 2. Filter available vehicles across active rental companies.
 3. Continue as a guest or register a customer account.
-4. Create a reservation and complete the mock deposit payment.
+4. Create a reservation and complete the demo deposit payment.
 5. Track a guest reservation with its reservation code and email, or view account reservations.
 
 ### AI vehicle search API
@@ -156,9 +166,22 @@ npm run build
 
 Docker must be running for the backend integration test.
 
+Pull requests and pushes to `main` are verified by GitHub Actions. The workflow runs backend tests,
+packages the backend, installs frontend dependencies with `npm ci`, and builds the Angular app.
+
+## Portfolio Demo Deployment Boundary
+
+The intended live target is a controlled public demo, not a commercial production SaaS. The public
+customer marketplace may be exposed, but staff/admin credentials should remain private and under the
+project owner's control. Real payment providers, PCI/card processing, Kubernetes, multi-region
+observability, and custom model training are intentionally out of scope for this portfolio version.
+
 ## Current Integration Boundaries
 
-- Deposit and refund processing use a mock payment provider.
+- Deposit and refund processing use a provider-ready demo payment provider. No real card is charged.
+- The payment domain keeps provider transaction ids, idempotency keys, audit logs, and outbox events
+  so a future Stripe, Iyzico, or PayTR adapter can replace the demo provider without rewriting the
+  reservation/rental workflow.
 - Email delivery is interface based. Local development can log emails, while Gmail SMTP can be enabled through environment variables for testable customer verification and password reset flows.
 - Staff and customer access tokens are kept in browser memory and renewed through separate rotating HttpOnly refresh cookies.
 - The example access-token lifetime is 15 minutes; refresh sessions default to seven days.

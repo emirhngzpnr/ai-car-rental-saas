@@ -3,6 +3,8 @@ package com.aicarrental.application.publicapi;
 import com.aicarrental.api.publicapi.request.PublicDepositPaymentRequest;
 import com.aicarrental.api.publicapi.response.PublicDepositPaymentResponse;
 import com.aicarrental.application.outbox.OutboxMessageService;
+import com.aicarrental.application.payment.provider.PaymentProvider;
+import com.aicarrental.application.payment.provider.PaymentProviderResult;
 import com.aicarrental.application.report.ReportCacheInvalidator;
 import com.aicarrental.common.audit.AuditAction;
 import com.aicarrental.common.audit.AuditEvent;
@@ -35,6 +37,7 @@ public class PublicPaymentService {
     private final OutboxMessageService outboxMessageService;
     private final AuditEventPublisher auditEventPublisher;
     private final ReportCacheInvalidator reportCacheInvalidator;
+    private final PaymentProvider paymentProvider;
 
     public PublicDepositPaymentResponse payDeposit(
             String tenantSlug,
@@ -82,6 +85,12 @@ public class PublicPaymentService {
                 });
 
         LocalDateTime now = LocalDateTime.now();
+        PaymentProviderResult providerResult = paymentProvider.chargeDeposit(
+                reservation.getDepositAmount(),
+                "TRY",
+                idempotencyKey
+        );
+
         PaymentTransaction paymentTransaction = PaymentTransaction.builder()
                 .tenant(reservation.getTenant())
                 .reservation(reservation)
@@ -89,7 +98,7 @@ public class PublicPaymentService {
                 .paymentStatus(PaymentStatus.SUCCESS)
                 .amount(reservation.getDepositAmount())
                 .currency("TRY")
-                .providerTransactionId("MOCK-PUBLIC-" + System.currentTimeMillis())
+                .providerTransactionId(providerResult.providerTransactionId())
                 .idempotencyKey(idempotencyKey)
                 .createdAt(now)
                 .updatedAt(now)
