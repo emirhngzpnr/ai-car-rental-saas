@@ -19,6 +19,8 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class CustomerVehicleReviewService {
+    private static final int REVIEW_EDIT_WINDOW_MINUTES = 10;
+
     private final CurrentCustomerService currentCustomerService;
     private final RentalRepository rentalRepository;
     private final VehicleReviewRepository reviewRepository;
@@ -28,7 +30,7 @@ public class CustomerVehicleReviewService {
         CustomerAccount customer = currentCustomerService.getCurrentCustomer();
         Rental rental = findEligibleRental(reservationCode, customer.getId());
 
-        if (reviewRepository.existsByReservation_IdAndActiveTrue(rental.getReservation().getId())) {
+        if (reviewRepository.existsByReservation_Id(rental.getReservation().getId())) {
             throw new BusinessException("This reservation already has a review");
         }
 
@@ -73,6 +75,7 @@ public class CustomerVehicleReviewService {
                 )
                 .orElseThrow(() -> new ResourceNotFoundException("Review not found"));
 
+        ensureReviewCanStillBeEdited(review);
         review.setRating(request.rating());
         review.setTitle(cleanOptional(request.title()));
         review.setComment(request.comment().trim());
@@ -100,6 +103,13 @@ public class CustomerVehicleReviewService {
         return rentalRepository
                 .findCompletedCustomerRentalForReview(reservationCode, customerId)
                 .orElseThrow(() -> new BusinessException("Only completed rentals can be reviewed"));
+    }
+
+    private void ensureReviewCanStillBeEdited(VehicleReview review) {
+        if (review.getCreatedAt() == null
+                || review.getCreatedAt().plusMinutes(REVIEW_EDIT_WINDOW_MINUTES).isBefore(LocalDateTime.now())) {
+            throw new BusinessException("Reviews can only be edited within the first 10 minutes");
+        }
     }
 
     private CustomerVehicleReviewResponse map(VehicleReview review) {

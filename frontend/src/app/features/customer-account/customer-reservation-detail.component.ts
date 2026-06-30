@@ -66,8 +66,8 @@ import { MarketplaceService } from '../marketplace/marketplace.service';
           <section class="review-panel">
             <div class="review-head">
               <div>
-                <h2>{{ review() ? 'Edit your review' : 'Write a review' }}</h2>
-                <p>Share feedback only after the rental has been completed.</p>
+                <h2>{{ review() ? 'Your review' : 'Write a review' }}</h2>
+                <p>{{ review() && !canEditReview() ? 'Reviews can only be edited within the first 10 minutes.' : 'You can edit your review for 10 minutes after submitting it.' }}</p>
               </div>
               @if (review()) {
                 <button mat-stroked-button color="warn" type="button" (click)="deleteReview()" [disabled]="reviewSaving()">
@@ -76,46 +76,56 @@ import { MarketplaceService } from '../marketplace/marketplace.service';
               }
             </div>
 
-            <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
-              <mat-form-field appearance="outline">
-                <mat-label>Rating</mat-label>
-                <mat-select formControlName="rating">
-                  @for (rating of ratings; track rating) {
-                    <mat-option [value]="rating">{{ rating }} star{{ rating === 1 ? '' : 's' }}</mat-option>
+            @if (review() && !canEditReview()) {
+              <article class="review-readonly">
+                <div><strong>{{ review()?.rating }} / 5</strong><span>{{ date(review()?.createdAt || '') }}</span></div>
+                @if (review()?.title) {
+                  <h3>{{ review()?.title }}</h3>
+                }
+                <p>{{ review()?.comment }}</p>
+              </article>
+            } @else {
+              <form [formGroup]="reviewForm" (ngSubmit)="submitReview()">
+                <mat-form-field appearance="outline">
+                  <mat-label>Rating</mat-label>
+                  <mat-select formControlName="rating">
+                    @for (rating of ratings; track rating) {
+                      <mat-option [value]="rating">{{ rating }} star{{ rating === 1 ? '' : 's' }}</mat-option>
+                    }
+                  </mat-select>
+                  @if (reviewForm.controls.rating.hasError('required')) {
+                    <mat-error>Rating is required</mat-error>
                   }
-                </mat-select>
-                @if (reviewForm.controls.rating.hasError('required')) {
-                  <mat-error>Rating is required</mat-error>
-                }
-              </mat-form-field>
+                </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Title</mat-label>
-                <input matInput formControlName="title" maxlength="100">
-                @if (reviewForm.controls.title.hasError('maxlength')) {
-                  <mat-error>Title can be at most 100 characters</mat-error>
-                }
-              </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Title</mat-label>
+                  <input matInput formControlName="title" maxlength="100">
+                  @if (reviewForm.controls.title.hasError('maxlength')) {
+                    <mat-error>Title can be at most 100 characters</mat-error>
+                  }
+                </mat-form-field>
 
-              <mat-form-field appearance="outline" class="full">
-                <mat-label>Comment</mat-label>
-                <textarea matInput formControlName="comment" rows="5" maxlength="1000"></textarea>
-                @if (reviewForm.controls.comment.hasError('required')) {
-                  <mat-error>Comment is required</mat-error>
-                }
-                @if (reviewForm.controls.comment.hasError('maxlength')) {
-                  <mat-error>Comment can be at most 1000 characters</mat-error>
-                }
-              </mat-form-field>
+                <mat-form-field appearance="outline" class="full">
+                  <mat-label>Comment</mat-label>
+                  <textarea matInput formControlName="comment" rows="5" maxlength="1000"></textarea>
+                  @if (reviewForm.controls.comment.hasError('required')) {
+                    <mat-error>Comment is required</mat-error>
+                  }
+                  @if (reviewForm.controls.comment.hasError('maxlength')) {
+                    <mat-error>Comment can be at most 1000 characters</mat-error>
+                  }
+                </mat-form-field>
 
-              @if (reviewError()) {
-                <p class="review-error">{{ reviewError() }}</p>
-              }
+                @if (reviewError()) {
+                  <p class="review-error">{{ reviewError() }}</p>
+                }
 
-              <button mat-flat-button color="primary" type="submit" [disabled]="reviewForm.invalid || reviewSaving()">
-                {{ reviewSaving() ? 'Saving...' : (review() ? 'Update review' : 'Submit review') }}
-              </button>
-            </form>
+                <button mat-flat-button color="primary" type="submit" [disabled]="reviewForm.invalid || reviewSaving()">
+                  {{ reviewSaving() ? 'Saving...' : (review() ? 'Update review' : 'Submit review') }}
+                </button>
+              </form>
+            }
           </section>
         } @else {
           <section class="review-panel muted">Only customers who completed a rental can review this vehicle.</section>
@@ -143,6 +153,11 @@ import { MarketplaceService } from '../marketplace/marketplace.service';
     .error,.review-error{color:#a11c1c}
     .review-panel form{display:grid;grid-template-columns:180px 1fr;gap:12px;margin-top:18px}
     .review-panel .full,.review-panel form button,.review-error{grid-column:1/-1}
+    .review-readonly{border:1px solid #e0e5eb;border-radius:6px;margin-top:18px;padding:14px}
+    .review-readonly div{display:flex;justify-content:space-between;gap:12px;color:#68758a}
+    .review-readonly strong{color:#8a5a12}
+    .review-readonly h3{font-size:16px;margin:12px 0 6px}
+    .review-readonly p{color:#40516a;margin:0}
     .muted{color:#68758a;text-align:center}
     @media(max-width:650px){.detail header,.review-head{flex-direction:column}.review-panel form{grid-template-columns:1fr}}
   `]
@@ -186,6 +201,10 @@ export class CustomerReservationDetailComponent implements OnInit {
   }
 
   submitReview(): void {
+    if (this.review() && !this.canEditReview()) {
+      this.reviewError.set('Reviews can only be edited within the first 10 minutes.');
+      return;
+    }
     if (this.reviewForm.invalid) {
       this.reviewForm.markAllAsTouched();
       return;
@@ -263,5 +282,13 @@ export class CustomerReservationDetailComponent implements OnInit {
 
   date(value: string): string {
     return new Date(value).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+  }
+
+  canEditReview(): boolean {
+    const review = this.review();
+    if (!review) {
+      return true;
+    }
+    return new Date(review.createdAt).getTime() + 10 * 60 * 1000 >= Date.now();
   }
 }

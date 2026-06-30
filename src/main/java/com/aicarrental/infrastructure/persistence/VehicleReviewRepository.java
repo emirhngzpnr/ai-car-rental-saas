@@ -15,6 +15,8 @@ import java.util.Optional;
 
 @Repository
 public interface VehicleReviewRepository extends JpaRepository<VehicleReview, Long> {
+    boolean existsByReservation_Id(Long reservationId);
+
     boolean existsByReservation_IdAndActiveTrue(Long reservationId);
 
     Optional<VehicleReview> findByReservation_IdAndCustomerAccount_IdAndActiveTrue(

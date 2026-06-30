@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -72,7 +73,7 @@ class CustomerVehicleReviewServiceTests {
         when(currentCustomerService.getCurrentCustomer()).thenReturn(customer);
         when(rentalRepository.findCompletedCustomerRentalForReview("RNT-2026-000019", 11L))
                 .thenReturn(Optional.of(rental));
-        when(reviewRepository.existsByReservation_IdAndActiveTrue(19L)).thenReturn(false);
+        when(reviewRepository.existsByReservation_Id(19L)).thenReturn(false);
         when(reviewRepository.save(any(VehicleReview.class))).thenAnswer(invocation -> {
             VehicleReview review = invocation.getArgument(0);
             review.setId(31L);
@@ -95,7 +96,7 @@ class CustomerVehicleReviewServiceTests {
         when(currentCustomerService.getCurrentCustomer()).thenReturn(customer);
         when(rentalRepository.findCompletedCustomerRentalForReview("RNT-2026-000019", 11L))
                 .thenReturn(Optional.of(rental));
-        when(reviewRepository.existsByReservation_IdAndActiveTrue(19L)).thenReturn(true);
+        when(reviewRepository.existsByReservation_Id(19L)).thenReturn(true);
 
         assertThrows(BusinessException.class, () -> service.create(
                 "RNT-2026-000019",
@@ -112,6 +113,32 @@ class CustomerVehicleReviewServiceTests {
         assertThrows(BusinessException.class, () -> service.create(
                 "RNT-2026-000019",
                 new CustomerVehicleReviewRequest(4, null, "Not eligible.")
+        ));
+    }
+
+    @Test
+    void updateRejectsReviewsAfterEditWindowExpires() {
+        VehicleReview review = VehicleReview.builder()
+                .id(31L)
+                .reservation(reservation)
+                .vehicle(rental.getVehicle())
+                .customerAccount(customer)
+                .rating(5)
+                .title("Original")
+                .comment("Original comment")
+                .active(true)
+                .createdAt(LocalDateTime.now().minusMinutes(11))
+                .build();
+
+        when(currentCustomerService.getCurrentCustomer()).thenReturn(customer);
+        when(rentalRepository.findCompletedCustomerRentalForReview("RNT-2026-000019", 11L))
+                .thenReturn(Optional.of(rental));
+        when(reviewRepository.findByReservation_IdAndCustomerAccount_IdAndActiveTrue(19L, 11L))
+                .thenReturn(Optional.of(review));
+
+        assertThrows(BusinessException.class, () -> service.update(
+                "RNT-2026-000019",
+                new CustomerVehicleReviewRequest(4, "Updated", "Updated comment")
         ));
     }
 }
