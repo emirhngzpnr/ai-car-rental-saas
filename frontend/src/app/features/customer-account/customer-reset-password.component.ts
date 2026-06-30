@@ -5,6 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { CustomerAuthService } from '../../core/customer-auth/customer-auth.service';
+import { passwordsMatchValidator } from '../../shared/validators/password-match.validator';
 
 @Component({
   selector: 'acr-customer-reset-password',
@@ -20,10 +21,13 @@ import { CustomerAuthService } from '../../core/customer-auth/customer-auth.serv
           <mat-label>New password</mat-label>
           <input matInput type="password" autocomplete="new-password" formControlName="newPassword">
           <mat-hint>At least 8 characters</mat-hint>
+          @if (form.controls.newPassword.hasError('required')) { <mat-error>Password is required</mat-error> }
+          @if (form.controls.newPassword.hasError('minlength')) { <mat-error>Password must be at least 8 characters</mat-error> }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Confirm password</mat-label>
           <input matInput type="password" autocomplete="new-password" formControlName="confirmPassword">
+          @if (form.controls.confirmPassword.hasError('required')) { <mat-error>Password confirmation is required</mat-error> }
           @if (passwordMismatch()) { <mat-error>Passwords do not match</mat-error> }
         </mat-form-field>
         <button mat-flat-button color="primary" [disabled]="loading() || !token">{{loading() ? 'Saving...' : 'Update password'}}</button>
@@ -45,7 +49,7 @@ export class CustomerResetPasswordComponent {
   readonly form = this.fb.group({
     newPassword: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', [Validators.required]]
-  });
+  }, { validators: passwordsMatchValidator() });
 
   constructor() {
     if (!this.token) {
@@ -54,8 +58,8 @@ export class CustomerResetPasswordComponent {
   }
 
   passwordMismatch(): boolean {
-    const value = this.form.getRawValue();
-    return this.form.controls.confirmPassword.touched && value.newPassword !== value.confirmPassword;
+    const confirmPassword = this.form.controls.confirmPassword;
+    return confirmPassword.hasError('passwordMismatch') && (confirmPassword.touched || confirmPassword.dirty);
   }
 
   submit(): void {
