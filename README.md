@@ -46,7 +46,8 @@ Generate a JWT secret containing at least 32 random bytes and store its Base64 r
 `JWT_SECRET`. Never commit real credentials or API keys.
 
 Set `SPRING_PROFILES_ACTIVE=local` for local development if you want demo seed data. Public demo
-deployments must set an explicit non-local profile and must not rely on a default `dev` profile.
+deployments should use `SPRING_PROFILES_ACTIVE=demo`; that profile keeps API docs disabled, hides
+server error details, requires explicit frontend URLs, and defaults refresh cookies to HTTPS-only.
 Set `CORS_ALLOWED_ORIGINS` to the exact frontend origin for the target environment. Do not publish
 staff/admin credentials in public demo environments.
 
@@ -73,6 +74,22 @@ SPRINGDOC_SWAGGER_UI_ENABLED=true
 When `MAIL_ENABLED=false`, the application uses the logging email sender for local development.
 API docs are enabled by the local profile and disabled by default in the base configuration; keep
 them disabled or protected in public demo deployments.
+
+For a controlled public demo, use environment values shaped like this:
+
+```properties
+SPRING_PROFILES_ACTIVE=demo
+CORS_ALLOWED_ORIGINS=https://your-demo-frontend.example
+CUSTOMER_FRONTEND_BASE_URL=https://your-demo-frontend.example
+STAFF_FRONTEND_BASE_URL=https://your-demo-frontend.example
+AUTH_REFRESH_COOKIE_SECURE=true
+AUTH_REFRESH_COOKIE_SAME_SITE=Lax
+SPRINGDOC_API_DOCS_ENABLED=false
+SPRINGDOC_SWAGGER_UI_ENABLED=false
+```
+
+If the frontend and backend are deployed on different sites, set a compatible SameSite value for
+your hosting topology and keep CORS credential origins exact rather than wildcard-based.
 
 ## Run Locally
 
@@ -175,6 +192,8 @@ The intended live target is a controlled public demo, not a commercial productio
 customer marketplace may be exposed, but staff/admin credentials should remain private and under the
 project owner's control. Real payment providers, PCI/card processing, Kubernetes, multi-region
 observability, and custom model training are intentionally out of scope for this portfolio version.
+Use the `demo` Spring profile for this environment; do not run the public demo with `local`, because
+the local profile intentionally enables developer conveniences such as API documentation.
 
 ## Current Integration Boundaries
 
