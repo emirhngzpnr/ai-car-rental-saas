@@ -5,6 +5,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { passwordsMatchValidator } from '../../../shared/validators/password-match.validator';
 
 @Component({
   selector: 'acr-set-password',
@@ -37,6 +38,9 @@ import { AuthService } from '../../../core/auth/auth.service';
           <mat-form-field appearance="outline">
             <mat-label>Confirm password</mat-label>
             <input matInput type="password" autocomplete="new-password" formControlName="confirmPassword">
+            @if (form.controls.confirmPassword.hasError('required')) {
+              <mat-error>Password confirmation is required</mat-error>
+            }
             @if (passwordMismatch()) {
               <mat-error>Passwords do not match</mat-error>
             }
@@ -78,11 +82,11 @@ export class SetPasswordComponent {
   readonly form = this.fb.nonNullable.group({
     newPassword: ['', [Validators.required, Validators.minLength(8)]],
     confirmPassword: ['', [Validators.required]]
-  });
+  }, { validators: passwordsMatchValidator() });
 
   passwordMismatch(): boolean {
-    return this.form.controls.confirmPassword.touched
-      && this.form.controls.newPassword.value !== this.form.controls.confirmPassword.value;
+    const confirmPassword = this.form.controls.confirmPassword;
+    return confirmPassword.hasError('passwordMismatch') && (confirmPassword.touched || confirmPassword.dirty);
   }
 
   submit(): void {
