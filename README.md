@@ -93,6 +93,10 @@ SPRINGDOC_SWAGGER_UI_ENABLED=false
 
 If the frontend and backend are deployed on different sites, set a compatible SameSite value for
 your hosting topology and keep CORS credential origins exact rather than wildcard-based.
+The Angular production build uses same-origin API calls (`/api/...`) by default, so the preferred
+demo deployment is one public domain with a reverse proxy routing `/api` to the Spring Boot backend.
+If the API is hosted on a separate domain, update `frontend/src/environments/environment.prod.ts`
+before building the frontend.
 
 ## Run Locally
 
