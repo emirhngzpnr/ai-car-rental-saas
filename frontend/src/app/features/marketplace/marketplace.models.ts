@@ -51,6 +51,41 @@ export interface SemanticVehicleSearchResponse {
   inferences: string[];
   warnings: string[];
 }
+export interface MarketplaceAssistantRequest {
+  query: string;
+  tenantSlug?: string;
+  pickupDateTime?: string;
+  returnDateTime?: string;
+  minDailyPrice?: number | null;
+  maxDailyPrice?: number | null;
+  minDailyKmLimit?: number | null;
+  brand?: string;
+  model?: string;
+  categories?: string[];
+  transmission?: string;
+  fuelType?: string;
+  minSeats?: number | null;
+  location?: string;
+  sort?: string;
+}
+export interface MarketplaceAssistantCitation {
+  title: string;
+  category: string;
+  tenantName: string;
+}
+export interface MarketplaceAssistantResponse {
+  answer: string;
+  intent: 'POLICY_QA' | 'VEHICLE_SEARCH' | 'MIXED' | 'UNKNOWN';
+  citations: MarketplaceAssistantCitation[];
+  vehicleSearchCriteria: SemanticVehicleSearchCriteria | null;
+  dateCriteria: {
+    pickupDateTime: string | null;
+    returnDateTime: string | null;
+  } | null;
+  vehicles: MarketplaceSearchResponse | null;
+  inferences: string[];
+  warnings: string[];
+}
 export interface MarketplaceVehicle {
   vehicleId: number; tenantSlug: string; tenantName: string; brand: string; model: string;
   productionYear: number; dailyPrice: number; dailyKmLimit: number; extraKmPricePerKm: number;

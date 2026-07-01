@@ -128,6 +128,178 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
     );
 
     @Query(value = """
+        SELECT v
+        FROM Vehicle v
+        LEFT JOIN VehicleReview vr ON vr.vehicle.id = v.id AND vr.active = true
+        WHERE v.active = true
+          AND v.tenant.active = true
+          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+          AND (:minDailyPrice IS NULL OR v.dailyPrice >= :minDailyPrice)
+          AND (:maxDailyPrice IS NULL OR v.dailyPrice <= :maxDailyPrice)
+          AND (:minDailyKmLimit IS NULL OR v.dailyKmLimit >= :minDailyKmLimit)
+          AND (:brand = '' OR LOWER(v.brand) LIKE CONCAT('%', :brand, '%'))
+          AND (:model = '' OR LOWER(v.model) LIKE CONCAT('%', :model, '%'))
+          AND (:categoriesEmpty = true OR v.category IN :categories)
+          AND (:transmission IS NULL OR v.transmission = :transmission)
+          AND (:fuelType IS NULL OR v.fuelType = :fuelType)
+          AND (:minSeats IS NULL OR v.seatCount >= :minSeats)
+          AND (:location = '' OR LOWER(v.location) LIKE CONCAT('%', :location, '%'))
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Reservation r
+              WHERE r.vehicle.id = v.id
+                AND r.active = true
+                AND r.status IN (
+                    com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
+                    com.aicarrental.domain.reservation.ReservationStatus.DEPOSIT_PAID,
+                    com.aicarrental.domain.reservation.ReservationStatus.CONFIRMED
+                )
+                AND r.pickupDateTime < :returnDateTime
+                AND r.returnDateTime > :pickupDateTime
+          )
+        GROUP BY v
+        HAVING COUNT(vr.id) > 0
+        ORDER BY AVG(vr.rating) DESC, COUNT(vr.id) DESC, v.id DESC
+        """, countQuery = """
+        SELECT COUNT(v)
+        FROM Vehicle v
+        WHERE v.active = true
+          AND v.tenant.active = true
+          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+          AND (:minDailyPrice IS NULL OR v.dailyPrice >= :minDailyPrice)
+          AND (:maxDailyPrice IS NULL OR v.dailyPrice <= :maxDailyPrice)
+          AND (:minDailyKmLimit IS NULL OR v.dailyKmLimit >= :minDailyKmLimit)
+          AND (:brand = '' OR LOWER(v.brand) LIKE CONCAT('%', :brand, '%'))
+          AND (:model = '' OR LOWER(v.model) LIKE CONCAT('%', :model, '%'))
+          AND (:categoriesEmpty = true OR v.category IN :categories)
+          AND (:transmission IS NULL OR v.transmission = :transmission)
+          AND (:fuelType IS NULL OR v.fuelType = :fuelType)
+          AND (:minSeats IS NULL OR v.seatCount >= :minSeats)
+          AND (:location = '' OR LOWER(v.location) LIKE CONCAT('%', :location, '%'))
+          AND EXISTS (
+              SELECT 1
+              FROM VehicleReview vr
+              WHERE vr.vehicle.id = v.id
+                AND vr.active = true
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Reservation r
+              WHERE r.vehicle.id = v.id
+                AND r.active = true
+                AND r.status IN (
+                    com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
+                    com.aicarrental.domain.reservation.ReservationStatus.DEPOSIT_PAID,
+                    com.aicarrental.domain.reservation.ReservationStatus.CONFIRMED
+                )
+                AND r.pickupDateTime < :returnDateTime
+                AND r.returnDateTime > :pickupDateTime
+          )
+        """)
+    Page<Vehicle> searchPublicMarketplaceTopRated(
+            @Param("pickupDateTime") LocalDateTime pickupDateTime,
+            @Param("returnDateTime") LocalDateTime returnDateTime,
+            @Param("minDailyPrice") BigDecimal minDailyPrice,
+            @Param("maxDailyPrice") BigDecimal maxDailyPrice,
+            @Param("minDailyKmLimit") Integer minDailyKmLimit,
+            @Param("brand") String brand,
+            @Param("model") String model,
+            @Param("categories") List<com.aicarrental.domain.vehicle.VehicleCategory> categories,
+            @Param("categoriesEmpty") boolean categoriesEmpty,
+            @Param("transmission") com.aicarrental.domain.vehicle.TransmissionType transmission,
+            @Param("fuelType") com.aicarrental.domain.vehicle.FuelType fuelType,
+            @Param("minSeats") Integer minSeats,
+            @Param("location") String location,
+            Pageable pageable
+    );
+
+    @Query(value = """
+        SELECT v
+        FROM Vehicle v
+        LEFT JOIN VehicleReview vr ON vr.vehicle.id = v.id AND vr.active = true
+        WHERE v.active = true
+          AND v.tenant.active = true
+          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+          AND (:minDailyPrice IS NULL OR v.dailyPrice >= :minDailyPrice)
+          AND (:maxDailyPrice IS NULL OR v.dailyPrice <= :maxDailyPrice)
+          AND (:minDailyKmLimit IS NULL OR v.dailyKmLimit >= :minDailyKmLimit)
+          AND (:brand = '' OR LOWER(v.brand) LIKE CONCAT('%', :brand, '%'))
+          AND (:model = '' OR LOWER(v.model) LIKE CONCAT('%', :model, '%'))
+          AND (:categoriesEmpty = true OR v.category IN :categories)
+          AND (:transmission IS NULL OR v.transmission = :transmission)
+          AND (:fuelType IS NULL OR v.fuelType = :fuelType)
+          AND (:minSeats IS NULL OR v.seatCount >= :minSeats)
+          AND (:location = '' OR LOWER(v.location) LIKE CONCAT('%', :location, '%'))
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Reservation r
+              WHERE r.vehicle.id = v.id
+                AND r.active = true
+                AND r.status IN (
+                    com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
+                    com.aicarrental.domain.reservation.ReservationStatus.DEPOSIT_PAID,
+                    com.aicarrental.domain.reservation.ReservationStatus.CONFIRMED
+                )
+                AND r.pickupDateTime < :returnDateTime
+                AND r.returnDateTime > :pickupDateTime
+          )
+        GROUP BY v
+        HAVING COUNT(vr.id) > 0
+        ORDER BY COUNT(vr.id) DESC, AVG(vr.rating) DESC, v.id DESC
+        """, countQuery = """
+        SELECT COUNT(v)
+        FROM Vehicle v
+        WHERE v.active = true
+          AND v.tenant.active = true
+          AND v.status = com.aicarrental.domain.vehicle.VehicleStatus.AVAILABLE
+          AND (:minDailyPrice IS NULL OR v.dailyPrice >= :minDailyPrice)
+          AND (:maxDailyPrice IS NULL OR v.dailyPrice <= :maxDailyPrice)
+          AND (:minDailyKmLimit IS NULL OR v.dailyKmLimit >= :minDailyKmLimit)
+          AND (:brand = '' OR LOWER(v.brand) LIKE CONCAT('%', :brand, '%'))
+          AND (:model = '' OR LOWER(v.model) LIKE CONCAT('%', :model, '%'))
+          AND (:categoriesEmpty = true OR v.category IN :categories)
+          AND (:transmission IS NULL OR v.transmission = :transmission)
+          AND (:fuelType IS NULL OR v.fuelType = :fuelType)
+          AND (:minSeats IS NULL OR v.seatCount >= :minSeats)
+          AND (:location = '' OR LOWER(v.location) LIKE CONCAT('%', :location, '%'))
+          AND EXISTS (
+              SELECT 1
+              FROM VehicleReview vr
+              WHERE vr.vehicle.id = v.id
+                AND vr.active = true
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM Reservation r
+              WHERE r.vehicle.id = v.id
+                AND r.active = true
+                AND r.status IN (
+                    com.aicarrental.domain.reservation.ReservationStatus.PENDING_PAYMENT,
+                    com.aicarrental.domain.reservation.ReservationStatus.DEPOSIT_PAID,
+                    com.aicarrental.domain.reservation.ReservationStatus.CONFIRMED
+                )
+                AND r.pickupDateTime < :returnDateTime
+                AND r.returnDateTime > :pickupDateTime
+          )
+        """)
+    Page<Vehicle> searchPublicMarketplaceMostReviewed(
+            @Param("pickupDateTime") LocalDateTime pickupDateTime,
+            @Param("returnDateTime") LocalDateTime returnDateTime,
+            @Param("minDailyPrice") BigDecimal minDailyPrice,
+            @Param("maxDailyPrice") BigDecimal maxDailyPrice,
+            @Param("minDailyKmLimit") Integer minDailyKmLimit,
+            @Param("brand") String brand,
+            @Param("model") String model,
+            @Param("categories") List<com.aicarrental.domain.vehicle.VehicleCategory> categories,
+            @Param("categoriesEmpty") boolean categoriesEmpty,
+            @Param("transmission") com.aicarrental.domain.vehicle.TransmissionType transmission,
+            @Param("fuelType") com.aicarrental.domain.vehicle.FuelType fuelType,
+            @Param("minSeats") Integer minSeats,
+            @Param("location") String location,
+            Pageable pageable
+    );
+
+    @Query(value = """
         SELECT
             COUNT(*) AS sampleCount,
             percentile_cont(0.30) WITHIN GROUP (ORDER BY v.daily_price) AS p30,

@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { CustomerProfile } from '../../core/customer-auth/customer-auth.models';
-import { CustomerReservation, CustomerVehicleReview, MarketplaceSearchResponse, MarketplaceVehicleDetail, ReservationResponse, SemanticVehicleSearchRequest, SemanticVehicleSearchResponse, TrackingResponse, VehicleReviewPage, VehicleReviewRequest, VehicleSearchCriteria } from './marketplace.models';
+import { CustomerReservation, CustomerVehicleReview, MarketplaceAssistantRequest, MarketplaceAssistantResponse, MarketplaceSearchResponse, MarketplaceVehicleDetail, ReservationResponse, SemanticVehicleSearchRequest, SemanticVehicleSearchResponse, TrackingResponse, VehicleReviewPage, VehicleReviewRequest, VehicleSearchCriteria } from './marketplace.models';
 
 @Injectable({ providedIn: 'root' })
 export class MarketplaceService {
@@ -24,6 +24,12 @@ export class MarketplaceService {
   interpretSearch(request: SemanticVehicleSearchRequest): Observable<SemanticVehicleSearchResponse> {
     return this.http.post<SemanticVehicleSearchResponse>(
       `${environment.apiUrl}/api/public/marketplace/vehicle-search/interpret`,
+      request
+    );
+  }
+  askAssistant(request: MarketplaceAssistantRequest): Observable<MarketplaceAssistantResponse> {
+    return this.http.post<MarketplaceAssistantResponse>(
+      `${environment.apiUrl}/api/public/marketplace/assistant/query`,
       request
     );
   }

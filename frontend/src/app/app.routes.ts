@@ -87,6 +87,12 @@ export const routes: Routes = [
         data: { roles: ['TENANT_ADMIN', 'TENANT_STAFF'] }
       },
       {
+        path: 'knowledge-base',
+        loadComponent: () => import('./features/knowledge-base/knowledge-base.component').then((component) => component.KnowledgeBaseComponent),
+        canActivate: [roleGuard],
+        data: { roles: ['TENANT_ADMIN', 'TENANT_STAFF'] }
+      },
+      {
         path: 'insurance-packages',
         loadComponent: () => import('./features/insurance-packages/insurance-packages.component').then((component) => component.InsurancePackagesComponent),
         canActivate: [roleGuard],

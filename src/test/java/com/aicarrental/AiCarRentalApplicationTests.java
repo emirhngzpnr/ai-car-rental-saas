@@ -41,7 +41,7 @@ class AiCarRentalApplicationTests {
 
 	@Container
 	static final PostgreSQLContainer<?> postgres =
-			new PostgreSQLContainer<>("postgres:16-alpine")
+			new PostgreSQLContainer<>("pgvector/pgvector:pg16")
 					.withDatabaseName("ai_car_rental_test")
 					.withUsername("test")
 					.withPassword("test");

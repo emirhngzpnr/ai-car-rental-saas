@@ -24,6 +24,12 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     roles: ['TENANT_ADMIN', 'TENANT_STAFF']
   },
   {
+    label: 'Knowledge Base',
+    icon: 'article',
+    route: '/app/knowledge-base',
+    roles: ['TENANT_ADMIN', 'TENANT_STAFF']
+  },
+  {
     label: 'Insurance Packages',
     icon: 'verified_user',
     route: '/app/insurance-packages',

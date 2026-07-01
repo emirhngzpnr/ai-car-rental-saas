@@ -62,14 +62,16 @@ public class PublicMarketplaceService {
 
         int safePage = Math.max(0, page);
         int safeSize = Math.min(50, Math.max(1, size));
-        PageRequest pageable = PageRequest.of(safePage, safeSize, resolveSort(sort));
+        PageRequest pageable = ratingSort(sort)
+                ? PageRequest.of(safePage, safeSize)
+                : PageRequest.of(safePage, safeSize, resolveSort(sort));
         List<VehicleCategory> resolvedCategories = resolveCategories(category, categories);
         boolean categoriesEmpty = resolvedCategories.isEmpty();
         List<VehicleCategory> queryCategories = categoriesEmpty
                 ? Arrays.asList(VehicleCategory.values())
                 : resolvedCategories;
 
-        Page<Vehicle> result = vehicleRepository.searchPublicMarketplace(
+        Page<Vehicle> result = searchVehicles(
                 pickupDateTime,
                 returnDateTime,
                 minDailyPrice,
@@ -83,6 +85,7 @@ public class PublicMarketplaceService {
                 fuelType,
                 minSeats,
                 normalize(location),
+                sort,
                 pageable
         );
 
@@ -223,6 +226,48 @@ public class PublicMarketplaceService {
             case "kmLimitDesc" -> Sort.by(Sort.Direction.DESC, "dailyKmLimit");
             default -> Sort.by(Sort.Direction.DESC, "id");
         };
+    }
+
+    private Page<Vehicle> searchVehicles(
+            LocalDateTime pickupDateTime,
+            LocalDateTime returnDateTime,
+            BigDecimal minDailyPrice,
+            BigDecimal maxDailyPrice,
+            Integer minDailyKmLimit,
+            String brand,
+            String model,
+            List<VehicleCategory> categories,
+            boolean categoriesEmpty,
+            TransmissionType transmission,
+            FuelType fuelType,
+            Integer minSeats,
+            String location,
+            String sort,
+            PageRequest pageable
+    ) {
+        if ("topRated".equals(sort)) {
+            return vehicleRepository.searchPublicMarketplaceTopRated(
+                    pickupDateTime, returnDateTime, minDailyPrice, maxDailyPrice,
+                    minDailyKmLimit, brand, model, categories, categoriesEmpty,
+                    transmission, fuelType, minSeats, location, pageable
+            );
+        }
+        if ("mostReviewed".equals(sort)) {
+            return vehicleRepository.searchPublicMarketplaceMostReviewed(
+                    pickupDateTime, returnDateTime, minDailyPrice, maxDailyPrice,
+                    minDailyKmLimit, brand, model, categories, categoriesEmpty,
+                    transmission, fuelType, minSeats, location, pageable
+            );
+        }
+        return vehicleRepository.searchPublicMarketplace(
+                pickupDateTime, returnDateTime, minDailyPrice, maxDailyPrice,
+                minDailyKmLimit, brand, model, categories, categoriesEmpty,
+                transmission, fuelType, minSeats, location, pageable
+        );
+    }
+
+    private boolean ratingSort(String sort) {
+        return "topRated".equals(sort) || "mostReviewed".equals(sort);
     }
 
     private String normalize(String value) {
