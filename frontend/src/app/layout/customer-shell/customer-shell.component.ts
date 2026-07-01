@@ -4,10 +4,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { CustomerAuthService } from '../../core/customer-auth/customer-auth.service';
 import { LucideCar, LucideLogOut } from '@lucide/angular';
+import { CustomerAssistantComponent } from '../../shared/customer-assistant/customer-assistant.component';
 
 @Component({
   selector: 'acr-customer-shell',
-  imports: [MatButtonModule, MatIconModule, RouterLink, RouterLinkActive, RouterOutlet, LucideCar, LucideLogOut],
+  imports: [MatButtonModule, MatIconModule, RouterLink, RouterLinkActive, RouterOutlet, LucideCar, LucideLogOut, CustomerAssistantComponent],
   template: `
     <div class="customer-shell">
       <header>
@@ -28,6 +29,7 @@ import { LucideCar, LucideLogOut } from '@lucide/angular';
         </nav>
       </header>
       <main><router-outlet /></main>
+      <acr-customer-assistant />
       <footer><span>AI Car Rental Marketplace</span><span>Secure tenant-aware booking</span></footer>
     </div>
   `,

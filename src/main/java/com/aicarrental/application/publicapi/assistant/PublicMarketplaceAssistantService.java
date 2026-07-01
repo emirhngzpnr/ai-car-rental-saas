@@ -145,8 +145,9 @@ public class PublicMarketplaceAssistantService {
                     .content();
             return new PolicyAnswer(cleanAnswer(answer), citations);
         } catch (Exception exception) {
-            log.warn("Policy assistant LLM answer failed: {}", exception.getClass().getSimpleName());
-            warnings.add("AI answer generation was unavailable, so the most relevant policy excerpt is shown.");
+            log.warn("Policy assistant answer generation is temporarily unavailable; using retrieved policy excerpt. Cause: {}",
+                    exception.getMessage());
+            warnings.add("Answer generation is temporarily unavailable, so the most relevant policy excerpt is shown.");
             return new PolicyAnswer(chunks.get(0).chunkText(), citations);
         }
     }

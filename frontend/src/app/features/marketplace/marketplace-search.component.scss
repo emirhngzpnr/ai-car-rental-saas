@@ -109,14 +109,6 @@
   padding: 12px;
 }
 
-.assistant-result {
-  background: #f7fafc;
-  border: 1px solid var(--acr-border-soft);
-  border-radius: 6px;
-  margin-top: 10px;
-  padding: 12px;
-}
-
 .ai-result-head {
   justify-content: space-between;
   gap: 12px;
@@ -167,22 +159,6 @@
 .ai-warnings {
   margin-top: 10px;
   color: var(--acr-warning);
-}
-
-.citations {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  margin-top: 10px;
-}
-
-.citations span {
-  background: #eef3f8;
-  border: 1px solid #dce2e9;
-  border-radius: 4px;
-  color: #40516a;
-  font-size: 12px;
-  padding: 5px 8px;
 }
 
 .primary-search {

@@ -1,11 +1,16 @@
 package com.aicarrental;
 
+import com.aicarrental.application.knowledge.KnowledgeChunkStore;
+import com.aicarrental.domain.knowledge.KnowledgeDocumentCategory;
+import com.aicarrental.domain.knowledge.TenantKnowledgeDocument;
 import com.aicarrental.domain.tenant.Tenant;
 import com.aicarrental.domain.vehicle.FuelType;
 import com.aicarrental.domain.vehicle.TransmissionType;
 import com.aicarrental.domain.vehicle.Vehicle;
 import com.aicarrental.domain.vehicle.VehicleCategory;
 import com.aicarrental.domain.vehicle.VehicleStatus;
+import com.aicarrental.infrastructure.persistence.TenantKnowledgeChunkRepository;
+import com.aicarrental.infrastructure.persistence.TenantKnowledgeDocumentRepository;
 import com.aicarrental.infrastructure.persistence.TenantRepository;
 import com.aicarrental.infrastructure.persistence.VehicleRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -27,6 +32,7 @@ import java.util.Base64;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
@@ -38,6 +44,15 @@ class AiCarRentalApplicationTests {
 
 	@Autowired
 	private TenantRepository tenantRepository;
+
+	@Autowired
+	private TenantKnowledgeDocumentRepository knowledgeDocumentRepository;
+
+	@Autowired
+	private TenantKnowledgeChunkRepository knowledgeChunkRepository;
+
+	@Autowired
+	private KnowledgeChunkStore knowledgeChunkStore;
 
 	@Container
 	static final PostgreSQLContainer<?> postgres =
@@ -117,8 +132,42 @@ class AiCarRentalApplicationTests {
 		assertEquals(3, marketplacePage.getTotalElements());
 	}
 
+	@Test
+	void storesAndSearchesTenantKnowledgeChunksWithPgvector() {
+		Tenant tenant = tenantRepository.save(Tenant.builder()
+				.companyName("Knowledge Test")
+				.subDomain("knowledge-test")
+				.slug("knowledge-test")
+				.active(true)
+				.build());
+
+		TenantKnowledgeDocument document = knowledgeDocumentRepository.saveAndFlush(
+				TenantKnowledgeDocument.builder()
+						.tenant(tenant)
+						.title("Deposit Policy")
+						.category(KnowledgeDocumentCategory.DEPOSIT_POLICY)
+						.content("Deposits are refunded within three business days after the vehicle is returned without damage.")
+						.active(true)
+						.build()
+		);
+
+		knowledgeChunkStore.replaceChunks(document, List.of(document.getContent()));
+		knowledgeChunkStore.replaceChunks(document, List.of("Updated deposit policy content."));
+
+		var results = knowledgeChunkStore.searchTenantChunks(
+				tenant.getId(),
+				"Updated deposit policy",
+				3
+		);
+
+		assertFalse(results.isEmpty());
+		assertEquals("Deposit Policy", results.get(0).title());
+	}
+
 	@AfterEach
 	void cleanSemanticSearchData() {
+		knowledgeChunkRepository.deleteAll();
+		knowledgeDocumentRepository.deleteAll();
 		vehicleRepository.deleteAll();
 		tenantRepository.deleteAll();
 	}

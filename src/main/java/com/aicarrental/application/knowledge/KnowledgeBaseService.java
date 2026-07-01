@@ -44,7 +44,7 @@ public class KnowledgeBaseService {
                 .content(cleanContent(request.content()))
                 .active(true)
                 .build();
-        TenantKnowledgeDocument saved = documentRepository.save(document);
+        TenantKnowledgeDocument saved = documentRepository.saveAndFlush(document);
         chunkStore.replaceChunks(saved, splitIntoChunks(saved.getContent()));
         return map(saved);
     }
@@ -56,7 +56,7 @@ public class KnowledgeBaseService {
         document.setTitle(cleanTitle(request.title()));
         document.setCategory(request.category());
         document.setContent(cleanContent(request.content()));
-        TenantKnowledgeDocument saved = documentRepository.save(document);
+        TenantKnowledgeDocument saved = documentRepository.saveAndFlush(document);
         chunkStore.replaceChunks(saved, splitIntoChunks(saved.getContent()));
         return map(saved);
     }

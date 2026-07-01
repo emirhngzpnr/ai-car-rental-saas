@@ -18,7 +18,6 @@ import {
 } from '@lucide/angular';
 import { formatTryAmount } from '../../core/format/currency.util';
 import {
-  MarketplaceAssistantCitation,
   MarketplaceVehicle,
   SemanticVehicleSearchCriteria,
   VehicleSearchCriteria
@@ -73,10 +72,6 @@ export class MarketplaceSearchComponent implements OnInit {
   readonly aiInferences = signal<string[]>([]);
   readonly aiWarnings = signal<string[]>([]);
   readonly appliedAiFilters = signal<string[]>([]);
-  readonly assistantLoading = signal(false);
-  readonly assistantAnswer = signal('');
-  readonly assistantCitations = signal<MarketplaceAssistantCitation[]>([]);
-  readonly assistantIntent = signal('');
 
   readonly form = this.fb.group({
     aiQuery: ['', [Validators.maxLength(500)]],
@@ -187,73 +182,6 @@ export class MarketplaceSearchComponent implements OnInit {
     });
   }
 
-  askAssistant(): void {
-    const value = this.form.getRawValue();
-    const query = value.aiQuery?.trim();
-    if (!query) {
-      this.aiError.set('Ask a policy question or describe the vehicle you need.');
-      return;
-    }
-    const pickupDateTime = value.pickupDate && value.pickupTime
-      ? this.combine(value.pickupDate, value.pickupTime)
-      : undefined;
-    const returnDateTime = value.returnDate && value.returnTime
-      ? this.combine(value.returnDate, value.returnTime)
-      : undefined;
-
-    this.assistantLoading.set(true);
-    this.aiError.set('');
-    this.assistantAnswer.set('');
-    this.assistantCitations.set([]);
-    this.assistantIntent.set('');
-    this.service.askAssistant({
-      query,
-      pickupDateTime,
-      returnDateTime,
-      minDailyPrice: value.minDailyPrice,
-      maxDailyPrice: value.maxDailyPrice,
-      minDailyKmLimit: value.minDailyKmLimit,
-      brand: value.brand || undefined,
-      categories: value.categories || [],
-      transmission: value.transmission || undefined,
-      fuelType: value.fuelType || undefined,
-      minSeats: value.minSeats,
-      location: value.location || undefined,
-      sort: value.sort || undefined
-    }).subscribe({
-      next: (response) => {
-        this.assistantAnswer.set(response.answer);
-        this.assistantCitations.set(response.citations);
-        this.assistantIntent.set(response.intent);
-        this.aiInferences.set(response.inferences);
-        this.aiWarnings.set(response.warnings);
-        if (response.dateCriteria) {
-          this.applyDateCriteria(response.dateCriteria);
-        }
-        if (response.vehicleSearchCriteria) {
-          this.applyCriteria(response.vehicleSearchCriteria);
-          this.appliedAiFilters.set([
-            ...(response.dateCriteria ? this.describeDateCriteria(response.dateCriteria, null) : []),
-            ...this.describeCriteria(response.vehicleSearchCriteria)
-          ]);
-        }
-        if (response.vehicles) {
-          this.vehicles.set(response.vehicles.content);
-          this.page.set(response.vehicles.page);
-          this.total.set(response.vehicles.totalElements);
-          this.totalPages.set(response.vehicles.totalPages);
-          void this.router.navigate([], {
-            relativeTo: this.route,
-            queryParams: this.buildCriteria(response.vehicles.page),
-            replaceUrl: true
-          });
-        }
-      },
-      error: (apiError) => this.aiError.set(apiError.error?.message || 'Assistant is temporarily unavailable.'),
-      complete: () => this.assistantLoading.set(false)
-    });
-  }
-
   clearAiInterpretation(): void {
     this.form.controls.aiQuery.setValue('');
     this.aiError.set('');
@@ -261,9 +189,6 @@ export class MarketplaceSearchComponent implements OnInit {
     this.aiInferences.set([]);
     this.aiWarnings.set([]);
     this.appliedAiFilters.set([]);
-    this.assistantAnswer.set('');
-    this.assistantCitations.set([]);
-    this.assistantIntent.set('');
   }
 
   search(page: number): void {

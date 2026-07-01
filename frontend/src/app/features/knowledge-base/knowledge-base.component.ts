@@ -10,6 +10,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { KnowledgeDocument, KnowledgeDocumentCategory, KnowledgeDocumentRequest } from './knowledge-base.models';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'acr-knowledge-base',
@@ -99,14 +100,13 @@ export class KnowledgeBaseComponent implements OnInit {
     this.error.set('');
     this.success.set('');
     const call = current ? this.service.update(current.id, request) : this.service.create(request);
-    call.subscribe({
+    call.pipe(finalize(() => this.saving.set(false))).subscribe({
       next: (document) => {
         this.success.set('Document saved and embedded for assistant search.');
         this.selected.set(document);
         this.load();
       },
-      error: (error) => this.error.set(error.error?.message || 'Knowledge document could not be saved.'),
-      complete: () => this.saving.set(false)
+      error: (error) => this.error.set(error.error?.message || 'Knowledge document could not be saved.')
     });
   }
 
@@ -114,10 +114,9 @@ export class KnowledgeBaseComponent implements OnInit {
     this.saving.set(true);
     this.error.set('');
     this.success.set('');
-    this.service.reembed(document.id).subscribe({
+    this.service.reembed(document.id).pipe(finalize(() => this.saving.set(false))).subscribe({
       next: () => this.success.set('Document embeddings were refreshed.'),
-      error: (error) => this.error.set(error.error?.message || 'Document could not be re-embedded.'),
-      complete: () => this.saving.set(false)
+      error: (error) => this.error.set(error.error?.message || 'Document could not be re-embedded.')
     });
   }
 
@@ -125,7 +124,7 @@ export class KnowledgeBaseComponent implements OnInit {
     this.saving.set(true);
     this.error.set('');
     this.success.set('');
-    this.service.deactivate(document.id).subscribe({
+    this.service.deactivate(document.id).pipe(finalize(() => this.saving.set(false))).subscribe({
       next: () => {
         if (this.selected()?.id === document.id) {
           this.newDocument();
@@ -133,8 +132,7 @@ export class KnowledgeBaseComponent implements OnInit {
         this.success.set('Document deactivated.');
         this.load();
       },
-      error: (error) => this.error.set(error.error?.message || 'Document could not be deactivated.'),
-      complete: () => this.saving.set(false)
+      error: (error) => this.error.set(error.error?.message || 'Document could not be deactivated.')
     });
   }
 
