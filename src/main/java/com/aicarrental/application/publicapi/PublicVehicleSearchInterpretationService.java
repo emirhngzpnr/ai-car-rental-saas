@@ -60,7 +60,7 @@ public class PublicVehicleSearchInterpretationService {
     private static final Pattern TIME_PATTERN =
             Pattern.compile("(?<!\\d)(?:saat\\s*)?(\\d{1,2})(?::(\\d{2}))?\\s*(am|pm)?(?!\\d)");
     private static final Set<String> ALLOWED_SORTS =
-            Set.of("recommended", "priceAsc", "priceDesc", "kmLimitDesc");
+            Set.of("recommended", "priceAsc", "priceDesc", "kmLimitDesc", "topRated", "mostReviewed");
     private static final Map<String, DayOfWeek> WEEKDAY_WORDS = weekdayWords();
 
     private final VehicleSearchAiClient aiClient;

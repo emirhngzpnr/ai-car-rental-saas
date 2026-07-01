@@ -27,7 +27,7 @@ public class SpringAiVehicleSearchClient implements VehicleSearchAiClient {
             Supported category values: ECONOMY, COMPACT, SEDAN, SUV, LUXURY, VAN.
             Supported transmission values: MANUAL, AUTOMATIC.
             Supported fuelType values: GASOLINE, DIESEL, HYBRID, ELECTRIC, LPG.
-            Supported sort values: recommended, priceAsc, priceDesc, kmLimitDesc.
+            Supported sort values: recommended, priceAsc, priceDesc, kmLimitDesc, topRated, mostReviewed.
             Supported priceIntent values: BUDGET, AFFORDABLE, NOT_EXPENSIVE, MID_RANGE, PREMIUM.
             Supported segmentIntent values: CITY, MID_RANGE, FAMILY, SPACIOUS, PREMIUM.
             Supported dateIntent values: NONE, PICKUP_ONLY, DATE_RANGE, WEEKEND.
@@ -41,6 +41,8 @@ public class SpringAiVehicleSearchClient implements VehicleSearchAiClient {
             - "not too expensive" or "cok pahali olmayan" -> NOT_EXPENSIVE
             - "cheap" or "ucuz" -> BUDGET
             - "cheapest car" or "en ucuz araba" -> sort priceAsc
+            - "top rated cars" or "en begenilen arabalar" -> sort topRated
+            - "most reviewed cars" or "en cok yorumlanan arabalar" -> sort mostReviewed
             - "mid-range" or "orta segment" -> segmentIntent MID_RANGE
             - "family car" or "aile araci" -> segmentIntent FAMILY
             - "spacious" or "genis" -> segmentIntent SPACIOUS

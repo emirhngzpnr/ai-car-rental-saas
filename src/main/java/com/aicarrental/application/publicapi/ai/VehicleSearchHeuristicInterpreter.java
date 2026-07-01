@@ -110,6 +110,12 @@ public class VehicleSearchHeuristicInterpreter {
     }
 
     private String detectSort(String query) {
+        if (containsAny(query, "en begenilen", "en iyi puan", "en yuksek puan", "top rated", "best rated")) {
+            return "topRated";
+        }
+        if (containsAny(query, "en cok yorum", "cok yorumlanan", "most reviewed", "most rated")) {
+            return "mostReviewed";
+        }
         if (containsAny(query, "en ucuz", "cheapest", "lowest price", "fiyati en dusuk")) {
             return "priceAsc";
         }

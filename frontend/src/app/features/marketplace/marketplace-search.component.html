@@ -15,9 +15,9 @@
       <div class="semantic-copy">
         <div class="semantic-title" id="semantic-search-title">
           <svg lucideSparkles [size]="18"></svg>
-          <strong>Describe the car you need</strong>
+          <strong>Ask about rental rules or find a car</strong>
         </div>
-        <span>Describe dates and preferences in everyday language. You can edit everything before searching.</span>
+        <span>Policy answers use tenant documents; vehicle results use live availability and ratings.</span>
       </div>
       <div class="semantic-input">
         <mat-form-field appearance="outline">
@@ -32,6 +32,10 @@
         <button mat-flat-button color="primary" type="button" (click)="applyAiFilters()" [disabled]="aiLoading()">
           <svg lucideSparkles [size]="17"></svg>
           {{ aiLoading() ? 'Interpreting...' : 'Apply AI filters' }}
+        </button>
+        <button mat-stroked-button type="button" (click)="askAssistant()" [disabled]="assistantLoading()">
+          <svg lucideSearch [size]="17"></svg>
+          {{ assistantLoading() ? 'Asking...' : 'Ask assistant' }}
         </button>
       </div>
 
@@ -70,6 +74,23 @@
             <div class="ai-warnings">
               @for (warning of aiWarnings(); track warning) {
                 <span>{{ warning }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+      @if (assistantAnswer()) {
+        <div class="assistant-result">
+          <div class="ai-result-head">
+            <div>
+              <strong>{{ assistantIntent() === 'VEHICLE_SEARCH' ? 'Vehicle search' : 'Assistant answer' }}</strong>
+              <span>{{ assistantAnswer() }}</span>
+            </div>
+          </div>
+          @if (assistantCitations().length) {
+            <div class="citations">
+              @for (citation of assistantCitations(); track citation.title + citation.tenantName) {
+                <span>{{ citation.tenantName }} · {{ citation.title }} · {{ citation.category }}</span>
               }
             </div>
           }
@@ -170,6 +191,8 @@
         <mat-label>Sort</mat-label>
         <mat-select formControlName="sort">
           <mat-option value="recommended">Recommended</mat-option>
+          <mat-option value="topRated">Top rated</mat-option>
+          <mat-option value="mostReviewed">Most reviewed</mat-option>
           <mat-option value="priceAsc">Price low to high</mat-option>
           <mat-option value="priceDesc">Price high to low</mat-option>
           <mat-option value="kmLimitDesc">Highest km limit</mat-option>
